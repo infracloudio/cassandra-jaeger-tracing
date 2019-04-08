@@ -55,6 +55,7 @@ public final class JaegerTracing extends Tracing
 	.getTracer();
 
     JaegerSpan currentSpan;
+    Tracer.SpanBuilder spanBuilder;
 
     public JaegerTracing()
     {
@@ -72,7 +73,6 @@ public final class JaegerTracing extends Tracing
     protected UUID newSession(UUID sessionId, TraceType traceType, Map<String,ByteBuffer> customPayload)
     {
         ByteBuffer bb = null != customPayload ? customPayload.get(JAEGER_TRACE_KEY) : null;
-	Tracer.SpanBuilder spanBuilder;
 
         if (null != bb) {
 	    JaegerSpanContext parentSpan =  Tracer.extract(Format.Builtin.HTTP_HEADERS, (TextMap) bb);
@@ -93,7 +93,7 @@ public final class JaegerTracing extends Tracing
 
 	// TODO: instead of starting the span store the builder?
 	// The span start happens at different place
-	currentSpan = (JaegerSpan) spanBuilder.start();
+	// currentSpan = (JaegerSpan) spanBuilder.start();
         return super.newSession(sessionId, traceType, customPayload);
     }
 
@@ -143,6 +143,17 @@ public final class JaegerTracing extends Tracing
         {
 	    // TODO; should set these things for a builder and save the builder?
 	    // extractAndSetSpan(bytes, message.getMessageType().name());
+	    JaegerSpanContext parentSpan =  Tracer.extract(Format.Builtin.HTTP_HEADERS, (TextMap) ByteBuffer.wrap(bytes));
+
+	    // TODO: try catch like:
+	    // https://github.com/yurishkuro/opentracing-tutorial/tree/master/java/src/main/java/lesson03#extract-the-span-context-from-the-incoming-request-using-tracerextract
+	    if (parentSpan == null) {
+		logger.error("invalid customPayload in {}", JAEGER_TRACE_KEY);
+		// spanBuilder = Tracer.buildSpan(traceType.name());
+	    }
+	    else {
+		spanBuilder = Tracer.buildSpan(message.getMessageType().name()).asChildOf(parentSpan);
+	    }
         }
         return super.initializeFromMessage(message);
     }
@@ -178,6 +189,7 @@ public final class JaegerTracing extends Tracing
     {
 	// TODO: Span should start here?
         // getServerTracer().setServerReceived();
+	currentSpan = (JaegerSpan) spanBuilder.start();
         currentSpan.setTag("sessionId", sessionId.toString());
         currentSpan.setTag("coordinator", coordinator.toString());
         currentSpan.setTag("started_at", Instant.now().toString());
