@@ -40,7 +40,7 @@
   </dependencies>
 
   <build>
-    <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
+    <!-- <pluginManagement><!-\- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -\-> -->
       <plugins>
         <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
         <plugin>
@@ -81,7 +81,52 @@
           <artifactId>maven-project-info-reports-plugin</artifactId>
           <version>3.0.0</version>
         </plugin>
+        <plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+	  <artifactId>maven-dependency-plugin</artifactId>
+	  <version>2.10</version>
+	  <executions>
+	    <execution>
+	      <id>copy-dependencies</id>
+	      <phase>package</phase>
+	      <goals>
+		<goal>copy-dependencies</goal>
+	      </goals>
+	      <configuration>
+		<outputDirectory>target</outputDirectory>
+		<includeScope>runtime</includeScope>
+	      </configuration>
+	    </execution>
+	  </executions>
+        </plugin>
+        <plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+	  <artifactId>maven-assembly-plugin</artifactId>
+	  <version>2.4.1</version>
+	  <configuration>
+	    <!-- get all project dependencies -->
+	    <descriptorRefs>
+  	      <descriptorRef>jar-with-dependencies</descriptorRef>
+	    </descriptorRefs>
+	    <!-- MainClass in mainfest make a executable jar -->
+	    <!-- <archive> -->
+	    <!--   <manifest> -->
+	    <!-- 	<mainClass>com.mkyong.core.utils.App</mainClass> -->
+	    <!--   </manifest> -->
+	    <!-- </archive> -->
+	  </configuration>
+	  <executions>
+	    <execution>
+	      <id>make-assembly</id>
+	      <!-- bind to the packaging phase -->
+	      <phase>package</phase>
+	      <goals>
+	        <goal>single</goal>
+	      </goals>
+	    </execution>
+	  </executions>
+	</plugin>
       </plugins>
-    </pluginManagement>
+    <!-- </pluginManagement> -->
   </build>
 </project>
