@@ -25,9 +25,11 @@ import io.jaegertracing.internal.JaegerSpan;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import io.opentracing.propagation.TextMap;
+import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.net.MessageIn;
 import org.apache.cassandra.tracing.TraceState;
 import org.apache.cassandra.tracing.Tracing;
+import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.utils.UUIDGen;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +50,9 @@ public final class JaegerTracing extends Tracing
 
     // TODO: type?
     // TODO: name of the service should be added here
-    volatile JaegerTracer Tracer = Configuration.fromEnv().getTracer();
+    volatile JaegerTracer Tracer = Configuration
+	.fromEnv("c*:" + DatabaseDescriptor.getClusterName() + ":" + FBUtilities.getBroadcastAddress().getHostName())
+	.getTracer();
 
     JaegerSpan currentSpan;
 
