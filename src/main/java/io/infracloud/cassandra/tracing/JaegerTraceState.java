@@ -19,6 +19,8 @@ package io.infracloud.cassandra.tracing;
 
 import io.jaegertracing.internal.JaegerTracer;
 import io.jaegertracing.internal.JaegerSpan;
+import io.opentracing.References;
+import io.opentracing.SpanContext;
 import org.apache.cassandra.tracing.TraceState;
 import org.apache.cassandra.tracing.Tracing;
 
@@ -67,20 +69,26 @@ final class JaegerTraceState extends TraceState
 
     private void traceImplWithClientSpans(String message)
     {
-        // brave.serverSpanThreadBinder().setCurrentSpan(serverSpan);
-        if (null != localSpan.get())
-        {
-            // brave.clientTracer().setClientReceived();
-	    localSpan.get().finish();
-            openSpans.remove(localSpan.get());
+	JaegerSpan parent = localSpan.get();
+        if (null != parent) {
+	    parent.finish();
+            openSpans.remove(parent);
             localSpan.remove();
         }
-	JaegerSpan span = Tracer.buildSpan(message + " [" + Thread.currentThread().getName() + "]").start();
-	// brave.clientTracer().startNewSpan(message + " [" + Thread.currentThread().getName() + "]");
-        // brave.clientTracer().setClientSent();
-        // Span prev = brave.clientSpanThreadBinder().getCurrentClientSpan();
-        // currentSpan.set(prev);
-        // openSpans.addLast(prev);
+
+	// TODO: improve this
+	JaegerSpan span;
+	if (parent != null) {
+	    span = Tracer.buildSpan(message + " [" + Thread.currentThread().getName() + "]")
+		.addReference(References.FOLLOWS_FROM, (SpanContext) parent.context())
+		.start();
+	}
+	else {
+	    span = Tracer.buildSpan(message + " [" + Thread.currentThread().getName() + "]")
+		.addReference(References.FOLLOWS_FROM, (SpanContext) currentSpan.context())
+		.start();
+	}
+
 	localSpan.set(span);
 	openSpans.addLast(span);
     }
