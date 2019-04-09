@@ -10,8 +10,7 @@
   <packaging>jar</packaging>
 
   <name>cassandra-jaeger-tracing</name>
-  <!-- FIXME change it to the project's website -->
-  <url>http://www.example.com</url>
+  <url>https://github.com/infracloudio/cassandra-jaeger-tracing</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -67,7 +66,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>2.22.1</version>
         </plugin>
-        <plugin>
+	<plugin>
           <artifactId>maven-jar-plugin</artifactId>
           <version>3.0.2</version>
         </plugin>
@@ -90,37 +89,13 @@
         </plugin>
         <plugin>
 	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-dependency-plugin</artifactId>
-	  <version>2.10</version>
-	  <executions>
-	    <execution>
-	      <id>copy-dependencies</id>
-	      <phase>package</phase>
-	      <goals>
-		<goal>copy-dependencies</goal>
-	      </goals>
-	      <configuration>
-		<outputDirectory>target</outputDirectory>
-		<includeScope>runtime</includeScope>
-	      </configuration>
-	    </execution>
-	  </executions>
-        </plugin>
-        <plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
 	  <artifactId>maven-assembly-plugin</artifactId>
-	  <version>2.4.1</version>
+	  <version>3.1.1</version>
 	  <configuration>
 	    <!-- get all project dependencies -->
 	    <descriptorRefs>
   	      <descriptorRef>jar-with-dependencies</descriptorRef>
 	    </descriptorRefs>
-	    <!-- MainClass in mainfest make a executable jar -->
-	    <!-- <archive> -->
-	    <!--   <manifest> -->
-	    <!-- 	<mainClass>com.mkyong.core.utils.App</mainClass> -->
-	    <!--   </manifest> -->
-	    <!-- </archive> -->
 	  </configuration>
 	  <executions>
 	    <execution>
