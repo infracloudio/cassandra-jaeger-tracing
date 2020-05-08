@@ -53,6 +53,7 @@ public final class JaegerTracing extends Tracing
 
     // TODO: type?
     // TODO: name of the service should be added here
+
     volatile JaegerTracer Tracer = Configuration
 	.fromEnv("c*:" + DatabaseDescriptor.getClusterName() + ":" + FBUtilities.getBroadcastAddress().getHostName())
 	.getTracer();
@@ -163,8 +164,6 @@ public final class JaegerTracing extends Tracing
     public TraceState initializeFromMessage(final MessageIn<?> message)
     {
         byte [] bytes = message.parameters.get(JAEGER_TRACE_KEY);
-
-        assert null == bytes : "invalid customPayload in " + JAEGER_TRACE_KEY;
 
         if (null != bytes)
         {
