@@ -2,6 +2,8 @@
 
 ![stability-wip](https://img.shields.io/badge/stability-work_in_progress-lightgrey.svg)
 
+**Update:** Works and tested with Cassandra 3.11.6!
+
 This plugin is based on [A Zipkin tracing plugin for
 Cassandra](https://github.com/thelastpickle/cassandra-zipkin-tracing)
 which is licensed under [Apache License

@@ -36,7 +36,9 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -45,6 +47,7 @@ public final class JaegerTracing extends Tracing
     // the key mentioned here will be used when sending the call to
     // Cassandra i.e. with customPayload
     public static final String JAEGER_TRACE_KEY = "jaeger-trace";
+    private static final String JAEGER_INTERNAL_TRACE_KEY = "uber-trace-id";
 
     private static final Logger logger = LoggerFactory.getLogger(JaegerTracing.class);
 
@@ -69,32 +72,56 @@ public final class JaegerTracing extends Tracing
         return newSession(sessionId, TraceType.QUERY, customPayload);
     }
 
+    protected static TextMap fromMapBytesString(Map<String, byte[]> custom_payload) {
+        Map<String, ByteBuffer> my_map = new HashMap<>();
+        for (Map.Entry<String, byte[]> entry : custom_payload.entrySet()) {
+            my_map.put(entry.getKey(), ByteBuffer.wrap(entry.getValue()));
+        }
+        return fromMapByteBufferString(my_map);
+    }
+
+    protected static TextMap fromMapByteBufferString(Map<String, ByteBuffer> custom_payload) {
+        TextMap tm = new StandardTextMap();
+        Charset charset = Charset.forName("UTF-8");
+        for (Map.Entry<String, ByteBuffer> entry : custom_payload.entrySet()) {
+            String value = charset.decode(entry.getValue()).toString();
+            String key;
+            if (entry.getKey().equals(JAEGER_TRACE_KEY)) {
+                key = JAEGER_INTERNAL_TRACE_KEY;
+            } else {
+                key = entry.getKey();
+            }
+            tm.put(key, value);
+        }
+        return tm;
+    }
+
     @Override
     protected UUID newSession(UUID sessionId, TraceType traceType, Map<String,ByteBuffer> customPayload)
     {
         ByteBuffer bb = null != customPayload ? customPayload.get(JAEGER_TRACE_KEY) : null;
 
         if (null != bb) {
-	    JaegerSpanContext parentSpan =  Tracer.extract(Format.Builtin.HTTP_HEADERS, (TextMap) bb);
+            TextMap tm = fromMapByteBufferString(customPayload);
+	        JaegerSpanContext parentSpan = Tracer.extract(Format.Builtin.HTTP_HEADERS, tm);
 
-	    // TODO: try catch like:
-	    // https://github.com/yurishkuro/opentracing-tutorial/tree/master/java/src/main/java/lesson03#extract-the-span-context-from-the-incoming-request-using-tracerextract
-	    if (parentSpan == null) {
-		logger.error("invalid customPayload in {}", JAEGER_TRACE_KEY);
-		spanBuilder = Tracer.buildSpan(traceType.name());
-	    }
-	    else {
-		spanBuilder = Tracer.buildSpan(traceType.name()).asChildOf(parentSpan);
-	    }
+            // TODO: try catch like:
+            // https://github.com/yurishkuro/opentracing-tutorial/tree/master/java/src/main/java/lesson03#extract-the-span-context-from-the-incoming-request-using-tracerextract
+            if (parentSpan == null) {
+                logger.error("invalid customPayload in {}", JAEGER_TRACE_KEY);
+                spanBuilder = Tracer.buildSpan(traceType.name());
+            }
+            else {
+                spanBuilder = Tracer.buildSpan(traceType.name()).asChildOf(parentSpan);
+            }
         }
 	else {
             spanBuilder = Tracer.buildSpan(traceType.name());
         }
 
-	// TODO: instead of starting the span store the builder?
-	// The span start happens at different place
-	// currentSpan = (JaegerSpan) spanBuilder.start();
-        return super.newSession(sessionId, traceType, customPayload);
+	    // the start happens right here
+	  currentSpan = (JaegerSpan) spanBuilder.start();
+      return super.newSession(sessionId, traceType, customPayload);
     }
 
     @Override
@@ -141,19 +168,20 @@ public final class JaegerTracing extends Tracing
 
         if (null != bytes)
         {
-	    // TODO; should set these things for a builder and save the builder?
-	    // extractAndSetSpan(bytes, message.getMessageType().name());
-	    JaegerSpanContext parentSpan =  Tracer.extract(Format.Builtin.HTTP_HEADERS, (TextMap) ByteBuffer.wrap(bytes));
+            TextMap tm = fromMapBytesString(message.parameters);
+            // TODO; should set these things for a builder and save the builder?
+            // extractAndSetSpan(bytes, message.getMessageType().name());
+            JaegerSpanContext parentSpan =  Tracer.extract(Format.Builtin.HTTP_HEADERS, tm);
 
-	    // TODO: try catch like:
-	    // https://github.com/yurishkuro/opentracing-tutorial/tree/master/java/src/main/java/lesson03#extract-the-span-context-from-the-incoming-request-using-tracerextract
-	    if (parentSpan == null) {
-		logger.error("invalid customPayload in {}", JAEGER_TRACE_KEY);
-		// spanBuilder = Tracer.buildSpan(traceType.name());
-	    }
-	    else {
-		spanBuilder = Tracer.buildSpan(message.getMessageType().name()).asChildOf(parentSpan);
-	    }
+            // TODO: try catch like:
+            // https://github.com/yurishkuro/opentracing-tutorial/tree/master/java/src/main/java/lesson03#extract-the-span-context-from-the-incoming-request-using-tracerextract
+            if (parentSpan == null) {
+                logger.error("invalid customPayload in {}", JAEGER_TRACE_KEY);
+                // spanBuilder = Tracer.buildSpan(traceType.name());
+            }
+            else {
+                spanBuilder = Tracer.buildSpan(message.getMessageType().name()).asChildOf(parentSpan);
+            }
         }
         return super.initializeFromMessage(message);
     }
