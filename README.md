@@ -69,3 +69,12 @@ This is because cqlsh is polling for tracing information in
 `system_traces` which isn't any longer being created. For the meantime
 an easy fix around this behaviour in cqlsh is to reduce
 `Session.max_trace_wait` down to 1 second.
+
+### Continuing parent traces
+
+In order to continue a parent trace send the trace injected
+into custom_payload with the _trace_id_key_ of `jaeger-trace`.
+Encode the header value in UTF-8.
+
+Refer to your Cassandra driver documentation in order
+to figure out how to send custom_payload.
