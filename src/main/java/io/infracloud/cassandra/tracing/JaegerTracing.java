@@ -99,7 +99,6 @@ public final class JaegerTracing extends Tracing {
         JaegerTraceState state = (JaegerTraceState) get();
         if (state != null) {
             state.stop();
-            currentSpan.finish();
         }
     }
 

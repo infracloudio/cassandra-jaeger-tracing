@@ -19,28 +19,24 @@ package io.infracloud.cassandra.tracing;
 
 import io.jaegertracing.internal.JaegerTracer;
 import io.jaegertracing.internal.JaegerSpan;
+import io.jaegertracing.internal.clock.Clock;
+import io.jaegertracing.internal.clock.SystemClock;
 import io.opentracing.References;
 import io.opentracing.SpanContext;
 import org.apache.cassandra.tracing.TraceState;
 import org.apache.cassandra.tracing.Tracing;
 
 import java.net.InetAddress;
-import java.util.Deque;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedDeque;
 
 final class JaegerTraceState extends TraceState
 {
     private final JaegerTracer Tracer;
     private final JaegerSpan currentSpan;
     private boolean stopped = false;
-
-    // re-using property from TraceStateImpl.java
-    private static final int WAIT_FOR_PENDING_EVENTS_TIMEOUT_SECS =
-      Integer.valueOf(System.getProperty("cassandra.wait_for_tracing_events_timeout_secs", "1"));
-
-    final Deque<JaegerSpan> openSpans = new ConcurrentLinkedDeque();
-    private final ThreadLocal<JaegerSpan> localSpan = new ThreadLocal<>();
+    private volatile long timestamp;
+    private static final Clock clock = new SystemClock();
+    private JaegerSpan localSpan;
 
     public JaegerTraceState(
 			    JaegerTracer Tracer,
@@ -63,50 +59,40 @@ final class JaegerTraceState extends TraceState
 
     private void traceImplWithClientSpans(String message)
     {
-        JaegerSpan span_to_close = localSpan.get();
-        if (null != span_to_close) {
-            span_to_close.finish();
-            localSpan.remove();
+        if (localSpan != null) {
+            localSpan.finish();
+            localSpan = null;
         }
 
-        JaegerSpan span = Tracer.buildSpan(message + " [" + Thread.currentThread().getName() + "]")
-                                .addReference(References.FOLLOWS_FROM, (SpanContext) currentSpan.context())
-                                .start();
+        localSpan = Tracer.buildSpan(message + " [" + Thread.currentThread().getName() + "]")
+                          .addReference(References.FOLLOWS_FROM, (SpanContext) currentSpan.context())
+                          .start();
 
-        localSpan.set(span);
+        timestamp = clock.currentTimeMicros();
     }
 
     @Override
     public void stop() {
         if (stopped)
             return;
+        timestamp = clock.currentTimeMicros();
+
+        // close all of the spans that we had to close
+        if (localSpan != null) {
+            localSpan.finish();
+            localSpan = null;
+        }
+
         stopped = true;
         super.stop();
-        closeClientSpans();
-    }
-
-    private void closeClientSpans()
-    {
-        JaegerSpan span_to_close = localSpan.get();
-        if (span_to_close != null) {
-            span_to_close.finish();
-            localSpan.remove();
-        }
+        currentSpan.finish(timestamp);
     }
 
     @Override
-    protected void waitForPendingEvents() {
-        int sleepTime = 100;
-        int maxAttempts = WAIT_FOR_PENDING_EVENTS_TIMEOUT_SECS / sleepTime;
-        for (int i = 0; 0 < openSpans.size() && i < maxAttempts ; ++i)
-        {
-            try
-            {
-                Thread.sleep(sleepTime);
-            }
-            catch (InterruptedException ex)
-            {
-            }
+    public void waitForPendingEvents() {
+        try {
+            Thread.currentThread().sleep(1000);
+        } catch (InterruptedException e) {
         }
     }
 }
