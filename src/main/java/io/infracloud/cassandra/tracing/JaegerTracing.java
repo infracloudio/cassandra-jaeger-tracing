@@ -19,9 +19,10 @@ package io.infracloud.cassandra.tracing;
 
 import com.google.common.collect.ImmutableMap;
 import io.jaegertracing.Configuration;
-import io.jaegertracing.internal.JaegerTracer;
-import io.jaegertracing.internal.JaegerSpanContext;
 import io.jaegertracing.internal.JaegerSpan;
+import io.jaegertracing.internal.JaegerSpanContext;
+import io.jaegertracing.internal.JaegerTracer;
+import io.jaegertracing.internal.propagation.TextMapCodec;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import io.opentracing.propagation.TextMap;
@@ -36,150 +37,108 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public final class JaegerTracing extends Tracing
-{
+public final class JaegerTracing extends Tracing {
     // the key mentioned here will be used when sending the call to
     // Cassandra i.e. with customPayload
     public static final String JAEGER_TRACE_KEY = "jaeger-trace";
-    private static final String JAEGER_INTERNAL_TRACE_KEY = "uber-trace-id";
 
     private static final Logger logger = LoggerFactory.getLogger(JaegerTracing.class);
 
-    // TODO: type?
-    // TODO: name of the service should be added here
-    volatile JaegerTracer Tracer = Configuration
-	.fromEnv("c*:" + DatabaseDescriptor.getClusterName() + ":" + FBUtilities.getBroadcastAddress().getHostName())
-	.getTracer();
+    private static final JaegerTracer Tracer = Configuration
+            .fromEnv("c*:" + DatabaseDescriptor.getClusterName() + ":" + FBUtilities.getBroadcastAddress().getHostName())
+            .withCodec(new Configuration.CodecConfiguration().withPropagation(
+                    Configuration.Propagation.JAEGER).withCodec(
+                            Format.Builtin.HTTP_HEADERS,
+                            TextMapCodec.builder().withUrlEncoding(true)
+                                        .withSpanContextKey(JAEGER_TRACE_KEY)
+                                        .build()))
+            .getTracer();
 
     JaegerSpan currentSpan;
     Tracer.SpanBuilder spanBuilder;
 
-    public JaegerTracing()
-    {
+    public JaegerTracing() {
     }
 
 
     // defensive override, see CASSANDRA-11706
     @Override
-    public UUID newSession(UUID sessionId, Map<String,ByteBuffer> customPayload)
-    {
+    public UUID newSession(UUID sessionId, Map<String, ByteBuffer> customPayload) {
         return newSession(sessionId, TraceType.QUERY, customPayload);
     }
 
-    protected static TextMap fromMapBytesString(Map<String, byte[]> custom_payload) {
-        Map<String, ByteBuffer> my_map = new HashMap<>();
-        for (Map.Entry<String, byte[]> entry : custom_payload.entrySet()) {
-            my_map.put(entry.getKey(), ByteBuffer.wrap(entry.getValue()));
-        }
-        return fromMapByteBufferString(my_map);
-    }
-
-    protected static TextMap fromMapByteBufferString(Map<String, ByteBuffer> custom_payload) {
-        TextMap tm = new StandardTextMap();
-        Charset charset = Charset.forName("UTF-8");
-        for (Map.Entry<String, ByteBuffer> entry : custom_payload.entrySet()) {
-            String value = charset.decode(entry.getValue()).toString();
-            String key;
-            if (entry.getKey().equals(JAEGER_TRACE_KEY)) {
-                key = JAEGER_INTERNAL_TRACE_KEY;
-            } else {
-                key = entry.getKey();
-            }
-            tm.put(key, value);
-        }
-        return tm;
-    }
 
     @Override
-    protected UUID newSession(UUID sessionId, TraceType traceType, Map<String,ByteBuffer> customPayload)
-    {
+    protected UUID newSession(UUID sessionId, TraceType traceType, Map<String, ByteBuffer> customPayload) {
         ByteBuffer bb = null != customPayload ? customPayload.get(JAEGER_TRACE_KEY) : null;
 
         if (null != bb) {
-            TextMap tm = fromMapByteBufferString(customPayload);
-	        JaegerSpanContext parentSpan = Tracer.extract(Format.Builtin.HTTP_HEADERS, tm);
+            StandardTextMap tm = new StandardTextMap(customPayload);
+            JaegerSpanContext parentSpan = Tracer.extract(Format.Builtin.HTTP_HEADERS, tm);
 
-            // TODO: try catch like:
-            // https://github.com/yurishkuro/opentracing-tutorial/tree/master/java/src/main/java/lesson03#extract-the-span-context-from-the-incoming-request-using-tracerextract
             if (parentSpan == null) {
-                logger.error("invalid customPayload in {}", JAEGER_TRACE_KEY);
+                logger.error("invalid customPayload in {}", tm.toString());
                 spanBuilder = Tracer.buildSpan(traceType.name());
-            }
-            else {
+            } else {
                 spanBuilder = Tracer.buildSpan(traceType.name()).asChildOf(parentSpan);
             }
-        }
-	else {
+        } else {
             spanBuilder = Tracer.buildSpan(traceType.name());
         }
 
-	    // the start happens right here
-	  currentSpan = (JaegerSpan) spanBuilder.start();
-      return super.newSession(sessionId, traceType, customPayload);
+        // the start happens right here
+        currentSpan = (JaegerSpan) spanBuilder.start();
+        return super.newSession(sessionId, traceType, customPayload);
     }
 
     @Override
-    protected void stopSessionImpl()
-    {
+    protected void stopSessionImpl() {
         JaegerTraceState state = (JaegerTraceState) get();
-        if (state != null)
-        {
+        if (state != null) {
             state.close();
-            // getServerTracer().setServerSend();
-            // getServerTracer().clearCurrentSpan();
-	    currentSpan.finish();
+            currentSpan.finish();
         }
     }
 
     @Override
-    public void doneWithNonLocalSession(TraceState s)
-    {
+    public void doneWithNonLocalSession(TraceState s) {
         JaegerTraceState state = (JaegerTraceState) s;
         state.close();
         // getServerTracer().setServerSend();
         // getServerTracer().clearCurrentSpan();
-	currentSpan.finish();
+        currentSpan.finish();
         super.doneWithNonLocalSession(state);
     }
 
     @Override
-    public TraceState begin(String request, InetAddress client, Map<String, String> parameters)
-    {
-	// TODO: check if the currentSpan is set before setting tags
-        if (null != client)
-	    currentSpan.setTag("client", client.toString());
-
+    public TraceState begin(String request, InetAddress client, Map<String, String> parameters) {
+        if (null != client) {
+            currentSpan.setTag("client", client.toString());
+        }
         currentSpan.setTag("request", request);
         return get();
     }
 
     @Override
-    public TraceState initializeFromMessage(final MessageIn<?> message)
-    {
-        byte [] bytes = message.parameters.get(JAEGER_TRACE_KEY);
+    public TraceState initializeFromMessage(final MessageIn<?> message) {
+        byte[] bytes = message.parameters.get(JAEGER_TRACE_KEY);
 
-        assert null == bytes : "invalid customPayload in " + JAEGER_TRACE_KEY;
+        if (null != bytes) {
+            StandardTextMap tm = StandardTextMap.from_bytes(message.parameters);
 
-        if (null != bytes)
-        {
-            TextMap tm = fromMapBytesString(message.parameters);
             // TODO; should set these things for a builder and save the builder?
             // extractAndSetSpan(bytes, message.getMessageType().name());
-            JaegerSpanContext parentSpan =  Tracer.extract(Format.Builtin.HTTP_HEADERS, tm);
+            JaegerSpanContext parentSpan = null;
+            parentSpan = Tracer.extract(Format.Builtin.HTTP_HEADERS, tm);
 
-            // TODO: try catch like:
-            // https://github.com/yurishkuro/opentracing-tutorial/tree/master/java/src/main/java/lesson03#extract-the-span-context-from-the-incoming-request-using-tracerextract
             if (parentSpan == null) {
-                logger.error("invalid customPayload in {}", JAEGER_TRACE_KEY);
-                // spanBuilder = Tracer.buildSpan(traceType.name());
-            }
-            else {
+                logger.error("invalid customPayload in {}", tm.toString());
+                spanBuilder = Tracer.buildSpan(tm.getOperationName());
+            } else {
                 spanBuilder = Tracer.buildSpan(message.getMessageType().name()).asChildOf(parentSpan);
             }
         }
@@ -187,53 +146,40 @@ public final class JaegerTracing extends Tracing
     }
 
     @Override
-    public Map<String, byte[]> getTraceHeaders()
-    {
+    public Map<String, byte[]> getTraceHeaders() {
         assert isTracing();
-        // Span span = brave.clientSpanThreadBinder().getCurrentClientSpan();
-
-        // SpanId spanId = SpanId.builder()
-        //         .traceId(span.getTrace_id())
-        //         .parentId(span.getParent_id())
-        //         .spanId(span.getId())
-        //         .build();
 
         return ImmutableMap.<String, byte[]>builder()
-	    .putAll(super.getTraceHeaders())
-	    .put(JAEGER_TRACE_KEY, currentSpan.toString().getBytes())
-	    .build();
+                .putAll(super.getTraceHeaders())
+                .put(JAEGER_TRACE_KEY, currentSpan.toString().getBytes())
+                .build();
     }
 
     @Override
-    public void trace(final ByteBuffer sessionId, final String message, final int ttl)
-    {
+    public void trace(final ByteBuffer sessionId, final String message, final int ttl) {
         UUID sessionUuid = UUIDGen.getUUID(sessionId);
         TraceState state = Tracing.instance.get(sessionUuid);
+        if (state == null) {
+            return;
+        }
         state.trace(message);
     }
 
     @Override
-    protected TraceState newTraceState(InetAddress coordinator, UUID sessionId, TraceType traceType)
-    {
-	// TODO: Span should start here?
+    protected TraceState newTraceState(InetAddress coordinator, UUID sessionId, TraceType traceType) {
+        // TODO: Span should start here?
         // getServerTracer().setServerReceived();
-	currentSpan = (JaegerSpan) spanBuilder.start();
+        currentSpan = (JaegerSpan) spanBuilder.start();
         currentSpan.setTag("sessionId", sessionId.toString());
         currentSpan.setTag("coordinator", coordinator.toString());
         currentSpan.setTag("started_at", Instant.now().toString());
 
-        // return new ZipkinTraceState(
-        //         brave,
-        //         coordinator,
-        //         sessionId,
-        //         traceType,
-        //         brave.serverSpanThreadBinder().getCurrentServerSpan());
-	return new JaegerTraceState(
-			      Tracer,
-			      coordinator,
-			      sessionId,
-			      traceType,
-			      currentSpan);
+        return new JaegerTraceState(
+                Tracer,
+                coordinator,
+                sessionId,
+                traceType,
+                currentSpan);
     }
 
 }

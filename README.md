@@ -74,7 +74,7 @@ an easy fix around this behaviour in cqlsh is to reduce
 
 In order to continue a parent trace send the trace injected
 into custom_payload with the _trace_id_key_ of `jaeger-trace`.
-Encode the header value in UTF-8.
+Inject it using HTTP_HEADERS TextMap codec with url encoding value of true.
 
 Refer to your Cassandra driver documentation in order
 to figure out how to send custom_payload.
