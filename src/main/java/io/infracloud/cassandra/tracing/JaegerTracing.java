@@ -25,7 +25,6 @@ import io.jaegertracing.internal.JaegerTracer;
 import io.jaegertracing.internal.propagation.TextMapCodec;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
-import io.opentracing.propagation.TextMap;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.net.MessageIn;
 import org.apache.cassandra.tracing.TraceState;
