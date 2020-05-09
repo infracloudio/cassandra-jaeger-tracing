@@ -28,12 +28,12 @@ import java.net.InetAddress;
 import java.util.Deque;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
-// import java.util.concurrent.TimeUnit;
 
 final class JaegerTraceState extends TraceState
 {
     private final JaegerTracer Tracer;
     private final JaegerSpan currentSpan;
+    private boolean stopped = false;
 
     // re-using property from TraceStateImpl.java
     private static final int WAIT_FOR_PENDING_EVENTS_TIMEOUT_SECS =
@@ -61,47 +61,37 @@ final class JaegerTraceState extends TraceState
         traceImplWithClientSpans(message);
     }
 
-    void close()
-    {
-        // brave.serverSpanThreadBinder().setCurrentSpan(serverSpan);
-        closeClientSpans();
-    }
-
     private void traceImplWithClientSpans(String message)
     {
-	JaegerSpan parent = localSpan.get();
-        if (null != parent) {
-	    parent.finish();
-            openSpans.remove(parent);
+        JaegerSpan span_to_close = localSpan.get();
+        if (null != span_to_close) {
+            span_to_close.finish();
             localSpan.remove();
         }
 
-	// TODO: improve this
-	JaegerSpan span;
-	if (parent != null) {
-	    span = Tracer.buildSpan(message + " [" + Thread.currentThread().getName() + "]")
-		.addReference(References.FOLLOWS_FROM, (SpanContext) parent.context())
-		.start();
-	}
-	else {
-	    span = Tracer.buildSpan(message + " [" + Thread.currentThread().getName() + "]")
-		.addReference(References.FOLLOWS_FROM, (SpanContext) currentSpan.context())
-		.start();
-	}
+        JaegerSpan span = Tracer.buildSpan(message + " [" + Thread.currentThread().getName() + "]")
+                                .addReference(References.FOLLOWS_FROM, (SpanContext) currentSpan.context())
+                                .start();
 
-	localSpan.set(span);
-	openSpans.addLast(span);
+        localSpan.set(span);
+    }
+
+    @Override
+    public void stop() {
+        if (stopped)
+            return;
+        stopped = true;
+        super.stop();
+        closeClientSpans();
     }
 
     private void closeClientSpans()
     {
-        for (JaegerSpan span : openSpans)
-        {
-	    span.finish();
+        JaegerSpan span_to_close = localSpan.get();
+        if (span_to_close != null) {
+            span_to_close.finish();
+            localSpan.remove();
         }
-        openSpans.clear();
-        // currentSpan.remove();
-	localSpan.remove();
     }
 
     @Override

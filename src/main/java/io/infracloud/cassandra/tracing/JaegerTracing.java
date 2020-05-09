@@ -98,19 +98,9 @@ public final class JaegerTracing extends Tracing {
     protected void stopSessionImpl() {
         JaegerTraceState state = (JaegerTraceState) get();
         if (state != null) {
-            state.close();
+            state.stop();
             currentSpan.finish();
         }
-    }
-
-    @Override
-    public void doneWithNonLocalSession(TraceState s) {
-        JaegerTraceState state = (JaegerTraceState) s;
-        state.close();
-        // getServerTracer().setServerSend();
-        // getServerTracer().clearCurrentSpan();
-        currentSpan.finish();
-        super.doneWithNonLocalSession(state);
     }
 
     @Override
@@ -130,9 +120,7 @@ public final class JaegerTracing extends Tracing {
             StandardTextMap tm = StandardTextMap.from_bytes(message.parameters);
 
             // TODO; should set these things for a builder and save the builder?
-            // extractAndSetSpan(bytes, message.getMessageType().name());
-            JaegerSpanContext parentSpan = null;
-            parentSpan = Tracer.extract(Format.Builtin.HTTP_HEADERS, tm);
+            JaegerSpanContext parentSpan = Tracer.extract(Format.Builtin.HTTP_HEADERS, tm);
 
             if (parentSpan == null) {
                 logger.error("invalid customPayload in {}", tm.toString());
