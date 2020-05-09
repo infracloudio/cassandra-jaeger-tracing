@@ -90,7 +90,7 @@ public final class JaegerTracing extends Tracing {
         }
 
         // the start happens right here
-        currentSpan = (JaegerSpan) spanBuilder.start();
+        currentSpan = (JaegerSpan) spanBuilder.ignoreActiveSpan().start();
         return super.newSession(sessionId, traceType, customPayload);
     }
 
@@ -123,9 +123,9 @@ public final class JaegerTracing extends Tracing {
 
             if (parentSpan == null) {
                 logger.error("invalid customPayload in {}", tm.toString());
-                spanBuilder = Tracer.buildSpan(tm.getOperationName());
+                spanBuilder = Tracer.buildSpan(tm.getOperationName()).ignoreActiveSpan();
             } else {
-                spanBuilder = Tracer.buildSpan(message.getMessageType().name()).asChildOf(parentSpan);
+                spanBuilder = Tracer.buildSpan(message.getMessageType().name()).asChildOf(parentSpan).ignoreActiveSpan();;
             }
         }
         return super.initializeFromMessage(message);

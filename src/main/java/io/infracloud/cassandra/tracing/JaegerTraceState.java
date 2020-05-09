@@ -36,7 +36,7 @@ final class JaegerTraceState extends TraceState
     private boolean stopped = false;
     private volatile long timestamp;
     private static final Clock clock = new SystemClock();
-    private JaegerSpan localSpan;
+    private volatile JaegerSpan currentTrace;
 
     public JaegerTraceState(
 			    JaegerTracer Tracer,
@@ -59,15 +59,19 @@ final class JaegerTraceState extends TraceState
 
     private void traceImplWithClientSpans(String message)
     {
-        if (localSpan != null) {
-            localSpan.finish();
-            localSpan = null;
+        if (currentTrace != null) {
+            currentTrace.finish();
         }
 
-        localSpan = Tracer.buildSpan(message + " [" + Thread.currentThread().getName() + "]")
-                          .addReference(References.FOLLOWS_FROM, (SpanContext) currentSpan.context())
-                          .start();
+        JaegerTracer.SpanBuilder builder = Tracer.buildSpan(message + " [" + Thread.currentThread().getName() + "]")
+                                                 .addReference(References.CHILD_OF, (SpanContext) currentSpan.context())
+                                                 .ignoreActiveSpan();
+        if (currentTrace != null) {
+            builder = builder.addReference(References.FOLLOWS_FROM, (SpanContext)currentTrace.context());
+        }
+        JaegerSpan span = builder.start();
 
+        currentTrace = span;
         timestamp = clock.currentTimeMicros();
     }
 
@@ -78,11 +82,10 @@ final class JaegerTraceState extends TraceState
         timestamp = clock.currentTimeMicros();
 
         // close all of the spans that we had to close
-        if (localSpan != null) {
-            localSpan.finish();
-            localSpan = null;
+        if (currentTrace != null) {
+            currentTrace.finish();
+            currentTrace = null;
         }
-
         stopped = true;
         super.stop();
         currentSpan.finish(timestamp);
