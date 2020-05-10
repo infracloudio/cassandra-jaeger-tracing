@@ -139,6 +139,7 @@ public final class JaegerTracing extends Tracing {
         }
         spanBuilder = spanBuilder.ignoreActiveSpan();
         this.spanBuilder.set(spanBuilder);
+        this.currentSpan.set(spanBuilder.start());
         return super.initializeFromMessage(message);
     }
 
