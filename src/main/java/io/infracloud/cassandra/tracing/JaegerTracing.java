@@ -23,6 +23,7 @@ import io.jaegertracing.internal.JaegerSpan;
 import io.jaegertracing.internal.JaegerSpanContext;
 import io.jaegertracing.internal.JaegerTracer;
 import io.jaegertracing.internal.propagation.TextMapCodec;
+import io.netty.util.internal.InternalThreadLocalMap;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import org.apache.cassandra.config.DatabaseDescriptor;
@@ -104,6 +105,7 @@ public final class JaegerTracing extends Tracing {
         JaegerTraceState state = (JaegerTraceState) get();
         if (state != null) {
             state.stop();
+            set(null);
         }
     }
 
@@ -145,12 +147,14 @@ public final class JaegerTracing extends Tracing {
 
     @Override
     public Map<String, byte[]> getTraceHeaders() {
-        assert isTracing();
-
-        return ImmutableMap.<String, byte[]>builder()
-                .putAll(super.getTraceHeaders())
-                .put(JAEGER_TRACE_KEY, currentSpan.get().toString().getBytes())
-                .build();
+        if (isTracing() && currentSpan.get() != null) {
+            return ImmutableMap.<String, byte[]>builder()
+                    .putAll(super.getTraceHeaders())
+                    .put(JAEGER_TRACE_KEY, currentSpan.get().toString().getBytes())
+                    .build();
+        } else {
+            return super.getTraceHeaders();
+        }
     }
 
     @Override
