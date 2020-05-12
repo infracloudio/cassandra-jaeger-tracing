@@ -174,6 +174,8 @@ public final class JaegerTracing extends Tracing {
         currentSpan.setTag("coordinator", coordinator.toString());
         currentSpan.setTag("started_at", Instant.now().toString());
 
+        this.currentSpan.set(currentSpan);
+
         return new JaegerTraceState(
                 Tracer,
                 coordinator,
