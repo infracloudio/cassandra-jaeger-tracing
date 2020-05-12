@@ -25,13 +25,16 @@ import io.opentracing.References;
 import io.opentracing.SpanContext;
 import org.apache.cassandra.tracing.TraceState;
 import org.apache.cassandra.tracing.Tracing;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.util.UUID;
 
 final class JaegerTraceState extends TraceState
 {
-    private final JaegerTracer Tracer;
+
+    private final JaegerTracer tracer;
     private final JaegerSpan currentSpan;
     private boolean stopped = false;
     private volatile long timestamp;
@@ -45,10 +48,10 @@ final class JaegerTraceState extends TraceState
 			    Tracing.TraceType traceType,
 			    JaegerSpan currentSpan)
     {
-	super(coordinator, sessionId, traceType);
-	assert null != currentSpan;
-	this.Tracer = Tracer;
-	this.currentSpan = currentSpan;
+        super(coordinator, sessionId, traceType);
+        assert null != currentSpan;
+        tracer = Tracer;
+        this.currentSpan = currentSpan;
     }
 
     @Override
@@ -59,19 +62,15 @@ final class JaegerTraceState extends TraceState
 
     private void traceImplWithClientSpans(String message)
     {
-        if (currentTrace != null) {
-            currentTrace.finish();
-        }
-
-        JaegerTracer.SpanBuilder builder = Tracer.buildSpan(message + " [" + Thread.currentThread().getName() + "]")
+        JaegerTracer.SpanBuilder builder = tracer.buildSpan(message + " [" + Thread.currentThread().getName() + "]")
                                                  .addReference(References.CHILD_OF, (SpanContext) currentSpan.context())
                                                  .ignoreActiveSpan();
         if (currentTrace != null) {
+            currentTrace.finish();
             builder = builder.addReference(References.FOLLOWS_FROM, (SpanContext)currentTrace.context());
         }
-        JaegerSpan span = builder.start();
 
-        currentTrace = span;
+        currentTrace = builder.start();
         timestamp = clock.currentTimeMicros();
     }
 
@@ -94,7 +93,7 @@ final class JaegerTraceState extends TraceState
     @Override
     public void waitForPendingEvents() {
         try {
-            Thread.currentThread().sleep(1000);
+            Thread.currentThread().sleep(2000);
         } catch (InterruptedException e) {
         }
     }
