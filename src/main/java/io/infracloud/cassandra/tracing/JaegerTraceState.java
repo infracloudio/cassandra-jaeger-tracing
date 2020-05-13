@@ -34,9 +34,6 @@ import java.util.UUID;
 
 final class JaegerTraceState extends TraceState
 {
-    /**
-     * How long should I wait for remaining traces?
-     */
     private static final CloserThread closer = new CloserThread();
     private static final Clock clock = new SystemClock();
     private final JaegerTracer tracer;
