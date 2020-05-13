@@ -102,7 +102,7 @@ public final class JaegerTracing extends Tracing {
         } else {
             tm = new StandardTextMap();
         }
-        initializeFromHeaders(tm, traceType.name());
+        initializeFromHeaders(tm, traceType.name(), true);
         return super.newSession(sessionId, traceType, customPayload);
     }
 
@@ -130,7 +130,7 @@ public final class JaegerTracing extends Tracing {
      * @param tm headers or custom payload
      * @param traceName name of the trace
      */
-    private void initializeFromHeaders(StandardTextMap tm, String traceName) {
+    private void initializeFromHeaders(StandardTextMap tm, String traceName, boolean isCoordinator) {
         JaegerTracer.SpanBuilder spanBuilder = tracer.buildSpan(traceName)
                                                      .ignoreActiveSpan();
 
@@ -138,6 +138,9 @@ public final class JaegerTracing extends Tracing {
 
         if (parentSpan != null) {
             spanBuilder = spanBuilder.asChildOf(parentSpan);
+        }
+        if (isCoordinator) {
+            spanBuilder.withTag("span.kind", "server").withTag("db.type", "cassandra");
         }
         this.spanBuilder.set(spanBuilder);
     }
@@ -156,7 +159,7 @@ public final class JaegerTracing extends Tracing {
         } else {
             tm = StandardTextMap.EMPTY_MAP;
         }
-        initializeFromHeaders(tm, operationName);
+        initializeFromHeaders(tm, operationName, false);
         return super.initializeFromMessage(message);
     }
 
