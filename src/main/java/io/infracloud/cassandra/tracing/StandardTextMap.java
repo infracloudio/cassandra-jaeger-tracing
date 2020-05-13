@@ -29,13 +29,28 @@ import static io.infracloud.cassandra.tracing.JaegerTracing.JAEGER_TRACE_KEY;
 
 
 public class StandardTextMap implements TextMap {
+    private static final String SECONDARY_KEY = "uber-trace-id";
+
     private final Map<String, String> map = new HashMap<>();
     private static final Charset charset = Charset.forName("UTF-8");
 
     private String operationName = "";
 
+    public boolean hasOperationName() {
+        return !operationName.equals("");
+    }
+
     public String getOperationName() {
         return operationName;
+    }
+
+    public void injectToByteMap(Map<String, byte[]> my_map) {
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            my_map.put(entry.getKey(), entry.getValue().getBytes(charset));
+        }
+    }
+
+    protected StandardTextMap() {
     }
 
     protected StandardTextMap(Map<String, ByteBuffer> custom_payload) {
@@ -44,10 +59,10 @@ public class StandardTextMap implements TextMap {
             String value = charset.decode(entry.getValue()).toString();
             // this safeguard is since Span adds the operation name in the header
             // which in turn confuses the codec
-            if (key.equals(JAEGER_TRACE_KEY)) {
-                String[] parts = value.split(" ");
+            if (key.equals(JAEGER_TRACE_KEY) || key.equals(SECONDARY_KEY)) {
+                final String[] parts = value.split(" ");
                 if (parts.length > 2) {
-                    StringBuilder sb = new StringBuilder();
+                    final StringBuilder sb = new StringBuilder();
                     for (int i=2; i<parts.length; i++) {
                         sb.append(parts[i]);
                         sb.append(" ");

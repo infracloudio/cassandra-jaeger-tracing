@@ -17,6 +17,7 @@
  */
 package io.infracloud.cassandra.tracing;
 
+import com.google.common.io.Closer;
 import io.jaegertracing.internal.JaegerTracer;
 import io.jaegertracing.internal.JaegerSpan;
 import io.jaegertracing.internal.clock.Clock;
@@ -33,13 +34,18 @@ import java.util.UUID;
 
 final class JaegerTraceState extends TraceState
 {
-
     private final JaegerTracer tracer;
     private final JaegerSpan currentSpan;
     private boolean stopped = false;
+    private static final CloserThread closer = new CloserThread();
     private volatile long timestamp;
     private static final Clock clock = new SystemClock();
     private volatile JaegerSpan currentTrace;
+    private boolean shouldWait = true;
+
+    public long getTimestamp() {
+        return timestamp;
+    }
 
     public JaegerTraceState(
 			    JaegerTracer Tracer,
@@ -52,6 +58,9 @@ final class JaegerTraceState extends TraceState
         assert null != currentSpan;
         tracer = Tracer;
         this.currentSpan = currentSpan;
+        closer.start();
+        closer.publish(this);
+        timestamp = clock.currentTimeMicros();
     }
 
     @Override
@@ -62,39 +71,50 @@ final class JaegerTraceState extends TraceState
 
     private void traceImplWithClientSpans(String message)
     {
-        JaegerTracer.SpanBuilder builder = tracer.buildSpan(message + " [" + Thread.currentThread().getName() + "]")
+        final JaegerTracer.SpanBuilder builder = tracer.buildSpan(message + " [" + Thread.currentThread().getName() + "]")
                                                  .addReference(References.CHILD_OF, (SpanContext) currentSpan.context())
                                                  .ignoreActiveSpan();
         if (currentTrace != null) {
             currentTrace.finish();
-            builder = builder.addReference(References.FOLLOWS_FROM, (SpanContext)currentTrace.context());
+            builder.addReference(References.FOLLOWS_FROM, (SpanContext)currentTrace.context());
         }
 
         currentTrace = builder.start();
         timestamp = clock.currentTimeMicros();
     }
 
+    public boolean isStopped() {
+        return stopped;
+    }
+
     @Override
     public void stop() {
-        if (stopped)
-            return;
-        timestamp = clock.currentTimeMicros();
+        synchronized (this) {
+            if (stopped)
+                return;
+            stopped = true;
+        }
 
         // close all of the spans that we had to close
         if (currentTrace != null) {
-            currentTrace.finish();
+            currentTrace.finish(timestamp);
             currentTrace = null;
         }
-        stopped = true;
         super.stop();
         currentSpan.finish(timestamp);
     }
 
+    protected void dontWaitUponClose() {
+        shouldWait = false;
+    }
+
     @Override
     public void waitForPendingEvents() {
-        try {
-            Thread.currentThread().sleep(2000);
-        } catch (InterruptedException e) {
+        if (shouldWait) {
+            try {
+                Thread.currentThread().sleep(2000);
+            } catch (InterruptedException e) {
+            }
         }
     }
 }
