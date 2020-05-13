@@ -129,6 +129,7 @@ public final class JaegerTracing extends Tracing {
      * Common to both newSession and initializeFromMessage
      * @param tm headers or custom payload
      * @param traceName name of the trace
+     * @param isCoordinator whether this trace is started on a coordinator
      */
     private void initializeFromHeaders(StandardTextMap tm, String traceName, boolean isCoordinator) {
         JaegerTracer.SpanBuilder spanBuilder = tracer.buildSpan(traceName)
