@@ -34,14 +34,18 @@ import java.util.UUID;
 
 final class JaegerTraceState extends TraceState
 {
+    /**
+     * How long should I wait for remaining traces?
+     */
+    protected static final int WAIT_FOR_EVENTS_IN_MS = 1000;
+    private static final CloserThread closer = new CloserThread();
+    private static final Clock clock = new SystemClock();
     private final JaegerTracer tracer;
     private final JaegerSpan currentSpan;
     private boolean stopped = false;
-    private static final CloserThread closer = new CloserThread();
-    private volatile long timestamp;
-    private static final Clock clock = new SystemClock();
-    private volatile JaegerSpan currentTrace;
     private boolean shouldWait = true;
+    private volatile long timestamp;
+    private SpanContext previousTraceContext = null;
 
     public long getTimestamp() {
         return timestamp;
@@ -55,7 +59,6 @@ final class JaegerTraceState extends TraceState
 			    JaegerSpan currentSpan)
     {
         super(coordinator, sessionId, traceType);
-        assert null != currentSpan;
         tracer = Tracer;
         this.currentSpan = currentSpan;
         closer.start();
@@ -66,20 +69,19 @@ final class JaegerTraceState extends TraceState
     @Override
     protected void traceImpl(String message)
     {
-        traceImplWithClientSpans(message);
-    }
-
-    private void traceImplWithClientSpans(String message)
-    {
+        // we do it that way because Cassandra calls trace() when an operation completes
         final JaegerTracer.SpanBuilder builder = tracer.buildSpan(message + " [" + Thread.currentThread().getName() + "]")
-                                                 .addReference(References.CHILD_OF, (SpanContext) currentSpan.context())
+                                                 .withStartTimestamp(timestamp)
+                                                 .addReference(References.CHILD_OF, currentSpan.context())
                                                  .ignoreActiveSpan();
-        if (currentTrace != null) {
-            currentTrace.finish();
-            builder.addReference(References.FOLLOWS_FROM, (SpanContext)currentTrace.context());
+
+        if (previousTraceContext != null) {
+            builder.addReference(References.FOLLOWS_FROM, previousTraceContext);
         }
 
-        currentTrace = builder.start();
+        final JaegerSpan span = builder.start();
+        previousTraceContext = span.context();
+        span.finish();
         timestamp = clock.currentTimeMicros();
     }
 
@@ -95,11 +97,6 @@ final class JaegerTraceState extends TraceState
             stopped = true;
         }
 
-        // close all of the spans that we had to close
-        if (currentTrace != null) {
-            currentTrace.finish(timestamp);
-            currentTrace = null;
-        }
         super.stop();
         currentSpan.finish(timestamp);
     }
@@ -112,7 +109,7 @@ final class JaegerTraceState extends TraceState
     public void waitForPendingEvents() {
         if (shouldWait) {
             try {
-                Thread.currentThread().sleep(2000);
+                Thread.currentThread().sleep(WAIT_FOR_EVENTS_IN_MS);
             } catch (InterruptedException e) {
             }
         }

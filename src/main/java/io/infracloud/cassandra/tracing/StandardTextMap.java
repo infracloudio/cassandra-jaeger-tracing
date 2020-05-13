@@ -21,6 +21,7 @@ import io.opentracing.propagation.TextMap;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -29,20 +30,8 @@ import static io.infracloud.cassandra.tracing.JaegerTracing.JAEGER_TRACE_KEY;
 
 
 public class StandardTextMap implements TextMap {
-    private static final String SECONDARY_KEY = "uber-trace-id";
-
     private final Map<String, String> map = new HashMap<>();
-    private static final Charset charset = Charset.forName("UTF-8");
-
-    private String operationName = "";
-
-    public boolean hasOperationName() {
-        return !operationName.equals("");
-    }
-
-    public String getOperationName() {
-        return operationName;
-    }
+    private static final Charset charset = StandardCharsets.UTF_8;
 
     public void injectToByteMap(Map<String, byte[]> my_map) {
         for (Map.Entry<String, String> entry : map.entrySet()) {
@@ -57,21 +46,6 @@ public class StandardTextMap implements TextMap {
         for (Map.Entry<String, ByteBuffer> entry : custom_payload.entrySet()) {
             String key = entry.getKey();
             String value = charset.decode(entry.getValue()).toString();
-            // this safeguard is since Span adds the operation name in the header
-            // which in turn confuses the codec
-            if (key.equals(JAEGER_TRACE_KEY) || key.equals(SECONDARY_KEY)) {
-                final String[] parts = value.split(" ");
-                if (parts.length > 2) {
-                    final StringBuilder sb = new StringBuilder();
-                    for (int i=2; i<parts.length; i++) {
-                        sb.append(parts[i]);
-                        sb.append(" ");
-                    }
-                    sb.deleteCharAt(sb.length()-1);
-                    operationName = sb.toString();
-                }
-                value = parts[0];
-            }
             put(key, value);
         }
     }

@@ -6,50 +6,32 @@ import io.jaegertracing.internal.clock.SystemClock;
 import java.util.LinkedList;
 import java.util.List;
 
+import static io.infracloud.cassandra.tracing.JaegerTraceState.WAIT_FOR_EVENTS_IN_MS;
+
 /**
  * Since Cassandra does not close traces made by nodes responding to the coordinator,
  * we need to close them manually.
+ *
+ * This will wait until WAIT_FOR_EVENTS_IN_MS milliseconds have passed since the
+ * last trace() and close the trace manually, with the timestamp of it's last trace.
  */
 public class CloserThread extends Thread {
     private final List<JaegerTraceState> to_close = new LinkedList<>();
     private static final Clock clock = new SystemClock();
     private boolean started = false;
-    // close traces after 3 seconds of inactivity
-    private static long EXPIRATION_TIME_IN_US = 3000000;
 
     public CloserThread() {
-        super();
-        setName("TraceCloser");
+        super("TraceCloser");
         setDaemon(true);
     }
 
     private boolean shouldExpire(JaegerTraceState trace) {
-        return clock.currentTimeMicros() - trace.getTimestamp() > EXPIRATION_TIME_IN_US;
+        return clock.currentTimeMicros() - trace.getTimestamp() > (WAIT_FOR_EVENTS_IN_MS*1000);
     }
 
     public void publish(JaegerTraceState trace) {
         synchronized (this) {
             to_close.add(trace);
-        }
-    }
-
-    public void process() {
-        synchronized (this) {
-            for (int i = 0; i < to_close.size(); i++) {
-                final JaegerTraceState trace = to_close.get(i);
-                // clean up traces started by Cassandra
-                if (trace.isStopped()) {
-                    to_close.remove(i);
-                    return;
-                }
-                // conditionally close trace spawned by the coordinator
-                if (shouldExpire(trace)) {
-                    trace.dontWaitUponClose();
-                    trace.stop();
-                    to_close.remove(i);
-                    return;
-                }
-            }
         }
     }
 
@@ -63,6 +45,27 @@ public class CloserThread extends Thread {
         super.start();
     }
 
+    public void process() {
+        synchronized (this) {
+            for (int i = 0; i < to_close.size(); i++) {
+                final JaegerTraceState trace = to_close.get(i);
+                // clean up traces started by Cassandra
+                if (trace.isStopped()) {
+                    to_close.remove(i);
+                    return; // we return earlier because the meaning of i just changed
+                }
+                // conditionally close trace spawned by the coordinator
+                if (shouldExpire(trace)) {
+                    trace.dontWaitUponClose();
+                    trace.stop();
+                    to_close.remove(i);
+                    return;
+                }
+            }
+        }
+    }
+
+    @Override
     public void run() {
         while (true) {
             process();
@@ -74,5 +77,4 @@ public class CloserThread extends Thread {
             }
         }
     }
-
 }

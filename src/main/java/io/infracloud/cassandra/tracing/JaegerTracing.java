@@ -17,7 +17,6 @@
  */
 package io.infracloud.cassandra.tracing;
 
-import com.google.common.collect.ImmutableMap;
 import io.jaegertracing.Configuration;
 import io.jaegertracing.internal.JaegerSpan;
 import io.jaegertracing.internal.JaegerSpanContext;
@@ -31,8 +30,6 @@ import org.apache.cassandra.tracing.TraceState;
 import org.apache.cassandra.tracing.Tracing;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.utils.UUIDGen;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
@@ -72,7 +69,7 @@ public final class JaegerTracing extends Tracing {
      */
     public static final String JAEGER_TRACE_KEY = "jaeger-trace";
 
-    private static final JaegerTracer Tracer = Configuration
+    private static final JaegerTracer tracer = Configuration
             .fromEnv("c*:" + DatabaseDescriptor.getClusterName() + ":" + FBUtilities.getBroadcastAddress().getHostName())
             .withCodec(new Configuration.CodecConfiguration().withPropagation(
                     Configuration.Propagation.JAEGER).withCodec(
@@ -86,7 +83,6 @@ public final class JaegerTracing extends Tracing {
     // of thread locals so as not to get confused.
     final ThreadLocal<JaegerSpan> currentSpan = new ThreadLocal<>();
     final ThreadLocal<JaegerTracer.SpanBuilder> spanBuilder = new ThreadLocal<>();
-    final ThreadLocal<StandardTextMap> receivedHeaders = new ThreadLocal<>();
 
     public JaegerTracing() {
     }
@@ -135,11 +131,10 @@ public final class JaegerTracing extends Tracing {
      * @param traceName name of the trace
      */
     private void initializeFromHeaders(StandardTextMap tm, String traceName) {
-        receivedHeaders.set(tm);
-        JaegerTracer.SpanBuilder spanBuilder = Tracer.buildSpan(traceName)
+        JaegerTracer.SpanBuilder spanBuilder = tracer.buildSpan(traceName)
                                                      .ignoreActiveSpan();
 
-        JaegerSpanContext parentSpan = Tracer.extract(Format.Builtin.HTTP_HEADERS, tm);
+        JaegerSpanContext parentSpan = tracer.extract(Format.Builtin.HTTP_HEADERS, tm);
 
         if (parentSpan != null) {
             spanBuilder = spanBuilder.asChildOf(parentSpan);
@@ -147,21 +142,23 @@ public final class JaegerTracing extends Tracing {
         this.spanBuilder.set(spanBuilder);
     }
 
+    /**
+     * Called to initialize a child trace, ie. a trace stemming from coordinator's activity.
+     *
+     * This means that this node is not a coordinator for this request.
+     */
     @Override
     public TraceState initializeFromMessage(final MessageIn<?> message) {
         if (message.parameters.get(JAEGER_TRACE_KEY) != null) {
             final StandardTextMap tm = StandardTextMap.from_bytes(message.parameters);
-            final String op_name;
-            if (tm.hasOperationName()) {
-                op_name = message.getMessageType().toString();
-            } else {
-                op_name = message.getMessageType().toString() + " " + tm.getOperationName();
-            }
-            initializeFromHeaders(tm, op_name);
+            initializeFromHeaders(tm, message.getMessageType().toString()+" [" + Thread.currentThread().getName() + "]");
         }
         return super.initializeFromMessage(message);
     }
 
+    /**
+     * Called on coordinator to provide headers to instantiate child traces.
+     */
     @Override
     public Map<String, byte[]> getTraceHeaders() {
         if (!(isTracing() && currentSpan.get() != null)) {
@@ -174,7 +171,8 @@ public final class JaegerTracing extends Tracing {
             map.put(entry.getKey(), entry.getValue());
         }
         final StandardTextMap stm = new StandardTextMap();
-        Tracer.inject(currentSpan.get().context(), Format.Builtin.HTTP_HEADERS, stm);
+        final SpanContext context = currentSpan.get().context();
+        tracer.inject(context, Format.Builtin.HTTP_HEADERS, stm);
         stm.injectToByteMap(map);
         return map;
     }
@@ -199,7 +197,7 @@ public final class JaegerTracing extends Tracing {
         this.currentSpan.set(currentSpan);
 
         return new JaegerTraceState(
-                Tracer,
+                tracer,
                 coordinator,
                 sessionId,
                 traceType,
