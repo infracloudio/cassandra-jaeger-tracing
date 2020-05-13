@@ -81,8 +81,8 @@ public final class JaegerTracing extends Tracing {
 
     // Since Cassandra spawns a single JaegerTracing instance, we need to make use
     // of thread locals so as not to get confused.
-    final ThreadLocal<JaegerSpan> currentSpan = new ThreadLocal<>();
-    final ThreadLocal<JaegerTracer.SpanBuilder> spanBuilder = new ThreadLocal<>();
+    private final ThreadLocal<JaegerSpan> currentSpan = new ThreadLocal<>();
+    private final ThreadLocal<JaegerTracer.SpanBuilder> spanBuilder = new ThreadLocal<>();
 
     public JaegerTracing() {
     }
@@ -108,7 +108,7 @@ public final class JaegerTracing extends Tracing {
 
     @Override
     protected void stopSessionImpl() {
-        JaegerTraceState state = (JaegerTraceState) get();
+        final JaegerTraceState state = (JaegerTraceState) get();
         if (state != null) {
             state.stop();
             set(null);
