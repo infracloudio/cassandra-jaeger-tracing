@@ -37,7 +37,6 @@ final class JaegerTraceState extends TraceState
     /**
      * How long should I wait for remaining traces?
      */
-    protected static final int WAIT_FOR_EVENTS_IN_MS = 1000;
     private static final CloserThread closer = new CloserThread();
     private static final Clock clock = new SystemClock();
     private final JaegerTracer tracer;
@@ -105,13 +104,4 @@ final class JaegerTraceState extends TraceState
         shouldWait = false;
     }
 
-    @Override
-    public void waitForPendingEvents() {
-        if (shouldWait) {
-            try {
-                Thread.currentThread().sleep(WAIT_FOR_EVENTS_IN_MS);
-            } catch (InterruptedException e) {
-            }
-        }
-    }
 }

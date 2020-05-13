@@ -149,10 +149,14 @@ public final class JaegerTracing extends Tracing {
      */
     @Override
     public TraceState initializeFromMessage(final MessageIn<?> message) {
+        final String operationName = message.getMessageType().toString()+" [" + Thread.currentThread().getName() + "]";
+        final StandardTextMap tm;
         if (message.parameters.get(JAEGER_TRACE_KEY) != null) {
-            final StandardTextMap tm = StandardTextMap.from_bytes(message.parameters);
-            initializeFromHeaders(tm, message.getMessageType().toString()+" [" + Thread.currentThread().getName() + "]");
+            tm = StandardTextMap.from_bytes(message.parameters);
+        } else {
+            tm = StandardTextMap.EMPTY_MAP;
         }
+        initializeFromHeaders(tm, operationName);
         return super.initializeFromMessage(message);
     }
 

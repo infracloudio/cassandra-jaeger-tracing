@@ -26,12 +26,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import static io.infracloud.cassandra.tracing.JaegerTracing.JAEGER_TRACE_KEY;
-
 
 public class StandardTextMap implements TextMap {
     private final Map<String, String> map = new HashMap<>();
     private static final Charset charset = StandardCharsets.UTF_8;
+    public static final StandardTextMap EMPTY_MAP = new StandardTextMap();
 
     public void injectToByteMap(Map<String, byte[]> my_map) {
         for (Map.Entry<String, String> entry : map.entrySet()) {
@@ -72,6 +71,7 @@ public class StandardTextMap implements TextMap {
      * This is for debug use only
      * @return string representation of contents of the text map
      */
+    @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();
         sb.append("StandardTextMap<");

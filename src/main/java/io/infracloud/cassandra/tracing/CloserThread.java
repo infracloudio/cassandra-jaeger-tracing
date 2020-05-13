@@ -6,16 +6,16 @@ import io.jaegertracing.internal.clock.SystemClock;
 import java.util.LinkedList;
 import java.util.List;
 
-import static io.infracloud.cassandra.tracing.JaegerTraceState.WAIT_FOR_EVENTS_IN_MS;
-
 /**
  * Since Cassandra does not close traces made by nodes responding to the coordinator,
  * we need to close them manually.
  *
- * This will wait until WAIT_FOR_EVENTS_IN_MS milliseconds have passed since the
+ * This will wait until WAIT_FOR_EVENTS_IN_US microseconds have passed since the
  * last trace() and close the trace manually, with the timestamp of it's last trace.
  */
 public class CloserThread extends Thread {
+
+    protected static final long WAIT_FOR_EVENTS_IN_US = 5000000;
     private final List<JaegerTraceState> to_close = new LinkedList<>();
     private static final Clock clock = new SystemClock();
     private boolean started = false;
@@ -26,7 +26,7 @@ public class CloserThread extends Thread {
     }
 
     private boolean shouldExpire(JaegerTraceState trace) {
-        return clock.currentTimeMicros() - trace.getTimestamp() > (WAIT_FOR_EVENTS_IN_MS*1000);
+        return clock.currentTimeMicros() - trace.getTimestamp() > (WAIT_FOR_EVENTS_IN_US);
     }
 
     public void publish(JaegerTraceState trace) {
