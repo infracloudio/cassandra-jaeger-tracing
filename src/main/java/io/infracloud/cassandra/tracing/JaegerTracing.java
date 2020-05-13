@@ -43,7 +43,7 @@ import java.util.UUID;
  * storage.
  *
  * Now, there are two possibilities. Either we are the coordinator, in which case Cassandra will call:
- * 1. newSession(...)
+ * 1. newSession(...) by Native-Transport-Request
  * 2.   which is called by (1). newTraceState(...)
  * 3. begin(...)
  * 4. trace(...)

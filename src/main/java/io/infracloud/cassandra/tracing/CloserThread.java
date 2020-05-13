@@ -45,36 +45,36 @@ public class CloserThread extends Thread {
         super.start();
     }
 
-    public void process() {
+    /**
+     * Return whether you managed to close anything
+     */
+    public boolean process() {
         synchronized (this) {
             for (int i = 0; i < to_close.size(); i++) {
                 final JaegerTraceState trace = to_close.get(i);
-                // clean up traces started by Cassandra
+                // clean up completed traces started as the coordinator
                 if (trace.isStopped()) {
                     to_close.remove(i);
-                    return; // we return earlier because the meaning of i just changed
+                    return true;
                 }
-                // conditionally close trace spawned by the coordinator
+                // close the child trace spawned by the coordinator
                 if (shouldExpire(trace)) {
-                    trace.dontWaitUponClose();
                     trace.stop();
                     to_close.remove(i);
-                    return;
+                    return true;
                 }
             }
         }
+        return false;
     }
 
     @Override
     public void run() {
         while (true) {
-            process();
-            if (to_close.size() == 0) {
-                try {
-                    sleep(1000);
-                } catch (InterruptedException e) {
-                }
-            }
+            while (process()) {}             // while last time something has been closed...
+            try {
+                sleep(1000);
+            } catch (InterruptedException e) {}
         }
     }
 }

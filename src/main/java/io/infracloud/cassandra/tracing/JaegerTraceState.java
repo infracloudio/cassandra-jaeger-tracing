@@ -17,7 +17,6 @@
  */
 package io.infracloud.cassandra.tracing;
 
-import com.google.common.io.Closer;
 import io.jaegertracing.internal.JaegerTracer;
 import io.jaegertracing.internal.JaegerSpan;
 import io.jaegertracing.internal.clock.Clock;
@@ -26,8 +25,6 @@ import io.opentracing.References;
 import io.opentracing.SpanContext;
 import org.apache.cassandra.tracing.TraceState;
 import org.apache.cassandra.tracing.Tracing;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.util.UUID;
@@ -39,7 +36,6 @@ final class JaegerTraceState extends TraceState
     private final JaegerTracer tracer;
     private final JaegerSpan currentSpan;
     private boolean stopped = false;
-    private boolean shouldWait = true;
     private volatile long timestamp;
     private SpanContext previousTraceContext = null;
 
@@ -96,9 +92,4 @@ final class JaegerTraceState extends TraceState
         super.stop();
         currentSpan.finish(timestamp);
     }
-
-    protected void dontWaitUponClose() {
-        shouldWait = false;
-    }
-
 }
