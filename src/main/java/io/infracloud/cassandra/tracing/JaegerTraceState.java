@@ -62,7 +62,8 @@ final class JaegerTraceState extends TraceState
     protected void traceImpl(String message)
     {
         // we do it that way because Cassandra calls trace() when an operation completes
-        final JaegerTracer.SpanBuilder builder = tracer.buildSpan(message + " [" + Thread.currentThread().getName() + "]")
+        final JaegerTracer.SpanBuilder builder = tracer.buildSpan(message)
+                                                 .withTag("thread", Thread.currentThread().getName())
                                                  .withStartTimestamp(timestamp)
                                                  .addReference(References.CHILD_OF, currentSpan.context())
                                                  .ignoreActiveSpan();

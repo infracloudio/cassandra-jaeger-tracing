@@ -153,7 +153,7 @@ public final class JaegerTracing extends Tracing {
      */
     @Override
     public TraceState initializeFromMessage(final MessageIn<?> message) {
-        final String operationName = message.getMessageType().toString()+" [" + Thread.currentThread().getName() + "]";
+        final String operationName = message.getMessageType().toString();
         final StandardTextMap tm;
         if (message.parameters.get(JAEGER_TRACE_KEY) != null) {
             tm = StandardTextMap.from_bytes(message.parameters);
@@ -198,6 +198,7 @@ public final class JaegerTracing extends Tracing {
     @Override
     protected TraceState newTraceState(InetAddress coordinator, UUID sessionId, TraceType traceType) {
         final JaegerSpan currentSpan = spanBuilder.get().start();
+        currentSpan.setTag("thread", Thread.currentThread().getName());
         currentSpan.setTag("sessionId", sessionId.toString());
         currentSpan.setTag("coordinator", coordinator.toString());
         currentSpan.setTag("started_at", Instant.now().toString());
