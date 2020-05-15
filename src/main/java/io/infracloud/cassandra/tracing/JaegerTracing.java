@@ -41,24 +41,24 @@ import java.util.UUID;
 /**
  * A single instance of this is created for entire Cassandra, so we need to use thread-local
  * storage.
- *
+ * <p>
  * Now, there are two possibilities. Either we are the coordinator, in which case Cassandra will call:
  * 1. newSession(...) by Native-Transport-Request
  * 2.   which is called by (1). newTraceState(...)
  * 3. begin(...)
  * 4. trace(...)
  * 5. stopSessionImpl(...)
- *
+ * <p>
  * or we are a replica, responding to a coordinator, in which case it will look more like:
- *
+ * <p>
  * 1. initializeFromMessage(...) by MessagingService
  * 1.    which is called by (1) newTraceState(...)
  * 2. trace(...)
  * 3. ...
  * 4. Nothing. Dead silence. Cassandra doesn't tell us when such a session has finished!
- *
+ * <p>
  * So we'll spawn a thread (CloserThread) to close them for us automatically.
- *
+ * <p>
  * So in general, in newSession/initializeFromMessage we prepare the builder, then in
  * newTrace start the span, and hope for the best.
  */
@@ -73,10 +73,10 @@ public final class JaegerTracing extends Tracing {
             .fromEnv("c*:" + DatabaseDescriptor.getClusterName() + ":" + FBUtilities.getBroadcastAddress().getHostName())
             .withCodec(new Configuration.CodecConfiguration().withPropagation(
                     Configuration.Propagation.JAEGER).withCodec(
-                            Format.Builtin.HTTP_HEADERS,
-                            TextMapCodec.builder().withUrlEncoding(false)
-                                        .withSpanContextKey(JAEGER_TRACE_KEY)
-                                        .build()))
+                    Format.Builtin.HTTP_HEADERS,
+                    TextMapCodec.builder().withUrlEncoding(false)
+                            .withSpanContextKey(JAEGER_TRACE_KEY)
+                            .build()))
             .getTracer();
 
     // Since Cassandra spawns a single JaegerTracing instance, we need to make use
@@ -127,13 +127,14 @@ public final class JaegerTracing extends Tracing {
 
     /**
      * Common to both newSession and initializeFromMessage
-     * @param tm headers or custom payload
-     * @param traceName name of the trace
+     *
+     * @param tm            headers or custom payload
+     * @param traceName     name of the trace
      * @param isCoordinator whether this trace is started on a coordinator
      */
     private void initializeFromHeaders(StandardTextMap tm, String traceName, boolean isCoordinator) {
         JaegerTracer.SpanBuilder spanBuilder = tracer.buildSpan(traceName)
-                                                     .ignoreActiveSpan();
+                .ignoreActiveSpan();
 
         JaegerSpanContext parentSpan = tracer.extract(Format.Builtin.HTTP_HEADERS, tm);
 
@@ -148,7 +149,7 @@ public final class JaegerTracing extends Tracing {
 
     /**
      * Called to initialize a child trace, ie. a trace stemming from coordinator's activity.
-     *
+     * <p>
      * This means that this node is not a coordinator for this request.
      */
     @Override

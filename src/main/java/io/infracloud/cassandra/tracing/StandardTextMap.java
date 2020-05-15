@@ -28,15 +28,9 @@ import java.util.Map;
 
 
 public class StandardTextMap implements TextMap {
-    private final Map<String, String> map = new HashMap<>();
-    private static final Charset charset = StandardCharsets.UTF_8;
     public static final StandardTextMap EMPTY_MAP = new StandardTextMap();
-
-    public void injectToByteMap(Map<String, byte[]> my_map) {
-        for (Map.Entry<String, String> entry : map.entrySet()) {
-            my_map.put(entry.getKey(), entry.getValue().getBytes(charset));
-        }
-    }
+    private static final Charset charset = StandardCharsets.UTF_8;
+    private final Map<String, String> map = new HashMap<>();
 
     protected StandardTextMap() {
     }
@@ -61,6 +55,11 @@ public class StandardTextMap implements TextMap {
         return new StandardTextMap(my_map);
     }
 
+    public void injectToByteMap(Map<String, byte[]> my_map) {
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            my_map.put(entry.getKey(), entry.getValue().getBytes(charset));
+        }
+    }
 
     @Override
     public Iterator<Map.Entry<String, String>> iterator() {
@@ -69,6 +68,7 @@ public class StandardTextMap implements TextMap {
 
     /**
      * This is for debug use only
+     *
      * @return string representation of contents of the text map
      */
     @Override
@@ -81,7 +81,7 @@ public class StandardTextMap implements TextMap {
             sb.append(entry.getValue());
             sb.append(",");
         }
-        sb.deleteCharAt(sb.length()-1);
+        sb.deleteCharAt(sb.length() - 1);
         sb.append(">");
         return sb.toString();
     }

@@ -9,15 +9,15 @@ import java.util.List;
 /**
  * Since Cassandra does not close traces made by nodes responding to the coordinator,
  * we need to close them manually.
- *
+ * <p>
  * This will wait until WAIT_FOR_EVENTS_IN_US microseconds have passed since the
  * last trace() and close the trace manually, with the timestamp of it's last trace.
  */
 public class CloserThread extends Thread {
 
     protected static final long WAIT_FOR_EVENTS_IN_US = 5000000;
-    private final List<JaegerTraceState> to_close = new LinkedList<>();
     private static final Clock clock = new SystemClock();
+    private final List<JaegerTraceState> to_close = new LinkedList<>();
     private boolean started = false;
 
     public CloserThread() {
@@ -71,10 +71,12 @@ public class CloserThread extends Thread {
     @Override
     public void run() {
         while (true) {
-            while (process()) {}             // while last time something has been closed...
+            while (process()) {
+            }             // while last time something has been closed...
             try {
                 sleep(1000);
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException e) {
+            }
         }
     }
 }
