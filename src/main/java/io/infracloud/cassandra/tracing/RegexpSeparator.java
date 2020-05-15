@@ -11,54 +11,54 @@ import java.util.regex.Pattern;
  */
 public class RegexpSeparator {
 
-    final static private SingleRegexpSeparator[] regexes = {
-            new SingleRegexpSeparator("Key cache hit",
+    final static private SingleRegexp[] regexps = {
+            new SingleRegexp("Key cache hit",
                     "Key cache hit for sstable (?<sstableid>\\d+)",
                     new String[]{"sstableid"}),
-            new SingleRegexpSeparator("Parsing query",
+            new SingleRegexp("Parsing query",
                     "Parsing (?<query>.*)",
                     new String[]{"query"}),
-            new SingleRegexpSeparator("Reading data",
+            new SingleRegexp("Reading data",
                     "reading data from /(?<othernode>.*)",
                     new String[]{"othernode"}),
-            new SingleRegexpSeparator("Read live rows and tombstone cells",
+            new SingleRegexp("Read live rows and tombstone cells",
                     "Read (?<liverows>\\d+) live rows and (?<tombstonecells>\\d+) tombstone cells",
                     new String[]{"liverows", "tombstonecells"}),
-            new SingleRegexpSeparator("Merged data from memtables and sstables",
+            new SingleRegexp("Merged data from memtables and sstables",
                     "Merged data from memtables and (?<sstables>\\d+) sstables",
                     new String[]{"sstables"}),
-            new SingleRegexpSeparator("Skipped non-slice-intersecting sstables",
-                    "Skipped (?<howmany>\\d+/\\d+) non-slice-intersecting sstables, included (?<tombstones>\\d+) due to tombstones",
-                    new String[]{"howmany", "tombstones"}),
-            new SingleRegexpSeparator("Received READ message",
+            new SingleRegexp("Skipped non-slice-intersecting sstables",
+                    "Skipped (?<sstables>\\d+/\\d+) non-slice-intersecting sstables, included (?<tombstones>\\d+) due to tombstones",
+                    new String[]{"sstables", "tombstones"}),
+            new SingleRegexp("Received READ message",
                     "READ message received from /(?<othernode>.*)",
                     new String[]{"othernode"}),
-            new SingleRegexpSeparator("Enqueuing response",
+            new SingleRegexp("Enqueuing response",
                     "Enqueuing response to /(?<othernode>.*)",
                     new String[]{"othernode"}),
-            new SingleRegexpSeparator("Sending response",
+            new SingleRegexp("Sending response",
                     "Sending REQUEST_RESPONSE message to /(?<othernode>.*)",
                     new String[]{"othernode"}),
-            new SingleRegexpSeparator("REQUEST_RESPONSE message received",
+            new SingleRegexp("REQUEST_RESPONSE message received",
                     "REQUEST_RESPONSE message received from /(?<othernode>.*)",
                     new String[]{"othernode"}),
-            new SingleRegexpSeparator("Sending READ message",
+            new SingleRegexp("Sending READ message",
                     "Sending READ message to /(?<othernode>.*)",
                     new String[]{"othernode"}),
-            new SingleRegexpSeparator("Scanned rows and matched ",
+            new SingleRegexp("Scanned rows and matched ",
                     "Scanned (?<rows>\\d+) rows and matched (?<matched>\\d+)",
                     new String[]{"rows", "matched"}),
-            new SingleRegexpSeparator("Partition index found",
+            new SingleRegexp("Partition index found",
                     "Partition index with (?<entries>\\d+) found for sstable (?<sstableid>\\d+)",
                     new String[]{"entries", "sstableid"}),
-            new SingleRegexpSeparator("Speculating read retry",
+            new SingleRegexp("Speculating read retry",
                     "speculating read retry on /(?<othernode>.*)",
                     new String[]{"othernode"})
     };
 
-    static protected AnalysisResult match(String trace) {
-        for (SingleRegexpSeparator srp : regexes) {
-            Matcher match = srp.match(trace);
+    static public AnalysisResult match(String trace) {
+        for (SingleRegexp srp : regexps) {
+            final Matcher match = srp.match(trace);
             if (match.matches()) {
                 return new RegexpResult(srp, match);
             }
@@ -72,27 +72,31 @@ public class RegexpSeparator {
          */
         abstract public String getTraceName();
 
+        /**
+         * Apply extracted tags to the span, or a no-op in case of a NoMatch
+         */
         public void applyTags(Span span) {
         }
     }
 
-    public static class NoMatch extends AnalysisResult {
+    private static class NoMatch extends AnalysisResult {
         final private String trace;
 
-        protected NoMatch(String trace) {
+        private NoMatch(String trace) {
             this.trace = trace;
         }
 
+        @Override
         public String getTraceName() {
             return trace;
         }
     }
 
-    public static class RegexpResult extends AnalysisResult {
-        final private SingleRegexpSeparator srp;
+    private static class RegexpResult extends AnalysisResult {
+        final private SingleRegexp srp;
         final private Matcher match;
 
-        public RegexpResult(SingleRegexpSeparator srp, Matcher match) {
+        private RegexpResult(SingleRegexp srp, Matcher match) {
             this.srp = srp;
             this.match = match;
         }
@@ -110,20 +114,20 @@ public class RegexpSeparator {
         }
     }
 
-    private static class SingleRegexpSeparator {
+    private static class SingleRegexp {
         final private String label;
         final private Pattern pattern;
         // we provide named groups explicitly since there's no Java API to get
         // names of the groups from the matcher
         final private String[] namedGroups;
 
-        protected SingleRegexpSeparator(String label, String regexp, String[] namedGroups) {
-            pattern = Pattern.compile(regexp);
+        private SingleRegexp(String label, String regexp, String[] namedGroups) {
+            this.pattern = Pattern.compile(regexp);
             this.label = label;
             this.namedGroups = namedGroups;
         }
 
-        protected Matcher match(String trace) {
+        private Matcher match(String trace) {
             return pattern.matcher(trace);
         }
     }
