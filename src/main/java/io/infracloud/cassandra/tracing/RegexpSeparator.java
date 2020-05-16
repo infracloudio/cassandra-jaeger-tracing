@@ -79,7 +79,10 @@ public class RegexpSeparator {
                     new String[]{"sstableid"}),
             new SingleRegexp("Caching rows",
                     "Caching (?<rows>\\d+) rows",
-                    new String[]{"rows"})
+                    new String[]{"rows"}),
+            new SingleRegexp("Executing single-partition query",
+                    "Executing single-partition query on (?<table>.*)",
+                    new String[]{"table"})
     };
 
     static public AnalysisResult match(String trace) {
