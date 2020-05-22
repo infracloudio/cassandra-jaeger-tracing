@@ -82,7 +82,16 @@ public class RegexpSeparator {
                     new String[]{"rows"}),
             new SingleRegexp("Executing single-partition query",
                     "Executing single-partition query on (?<table>.*)",
-                    new String[]{"table"})
+                    new String[]{"table"}),
+            new SingleRegexp("Sending MUTATION message",
+                    "Sending MUTATION message to (?<othernode>.*)",
+                    new String[]{"othernode"}),
+            new SingleRegexp("Adding to memtable",
+                    "Adding to (?<table>.*) memtable",
+                    new String[]{"table"}),
+            new SingleRegexp("Received MUTATION message",
+                    "MUTATION message received from (?<othernode>.*)",
+                    new String[]{"othernode"})
     };
 
     static public AnalysisResult match(String trace) {
