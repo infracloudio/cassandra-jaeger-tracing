@@ -44,7 +44,7 @@ import java.util.UUID;
  * <p>
  * Now, there are two possibilities. Either we are the coordinator, in which case Cassandra will call:
  * 1. newSession(...) by Native-Transport-Request
- * 2.   which is called by (1). newTraceState(...)
+ * 2. newTraceState(...) is called by newSession(...)
  * 3. begin(...)
  * 4. trace(...)
  * 5. stopSessionImpl(...)
@@ -52,7 +52,7 @@ import java.util.UUID;
  * or we are a replica, responding to a coordinator, in which case it will look more like:
  * <p>
  * 1. initializeFromMessage(...) by MessagingService
- * 1.    which is called by (1) newTraceState(...)
+ * 2. newTraceState(...) is called by initializeFromMessage(...)
  * 2. trace(...)
  * 3. ...
  * 4. Nothing. Dead silence. Cassandra doesn't tell us when such a session has finished!
@@ -67,17 +67,24 @@ public final class JaegerTracing extends Tracing {
      * The key mentioned here will be used when sending the call to Cassandra with customPayload.
      * Encode it using HTTP codec with url_encode=true
      */
-    public static final String JAEGER_TRACE_KEY = "jaeger-trace";
+    public static final String DEFAULT_TRACE_KEY = "uber-trace-id";
+    private static final String JAEGER_TRACE_KEY_ENV_NAME = "JAEGER_TRACE_KEY";
+    private static final String trace_key = (System.getenv(JAEGER_TRACE_KEY_ENV_NAME) == null) ?
+            DEFAULT_TRACE_KEY : System.getenv(JAEGER_TRACE_KEY_ENV_NAME);
 
-    private static final JaegerTracer tracer = Configuration
+    private static final JaegerTracer tracer;
+
+    static {
+        tracer = Configuration
             .fromEnv("c*:" + DatabaseDescriptor.getClusterName() + ":" + FBUtilities.getBroadcastAddress().getHostName())
             .withCodec(new Configuration.CodecConfiguration().withPropagation(
                     Configuration.Propagation.JAEGER).withCodec(
                     Format.Builtin.HTTP_HEADERS,
                     TextMapCodec.builder().withUrlEncoding(false)
-                            .withSpanContextKey(JAEGER_TRACE_KEY)
+                            .withSpanContextKey(trace_key)
                             .build()))
             .getTracer();
+    }
 
     // Since Cassandra spawns a single JaegerTracing instance, we need to make use
     // of thread locals so as not to get confused.
@@ -156,7 +163,7 @@ public final class JaegerTracing extends Tracing {
     public TraceState initializeFromMessage(final MessageIn<?> message) {
         final String operationName = message.getMessageType().toString();
         final StandardTextMap tm;
-        if (message.parameters.get(JAEGER_TRACE_KEY) != null) {
+        if (message.parameters.get(trace_key) != null) {
             tm = StandardTextMap.from_bytes(message.parameters);
         } else {
             tm = StandardTextMap.EMPTY_MAP;

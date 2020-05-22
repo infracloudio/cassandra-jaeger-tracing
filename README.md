@@ -78,3 +78,7 @@ Inject it using HTTP_HEADERS TextMap codec with url encoding value of true.
 
 Refer to your Cassandra driver documentation in order
 to figure out how to send custom_payload.
+
+If you need a custom trace key, specify it in environment
+variable `JAEGER_TRACE_KEY`. Note that the default 
+is `uber-trace-id`.
