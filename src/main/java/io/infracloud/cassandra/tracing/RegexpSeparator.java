@@ -91,7 +91,13 @@ public class RegexpSeparator {
                     new String[]{"table"}),
             new SingleRegexp("Received MUTATION message",
                     "MUTATION message received from (?<othernode>.*)",
-                    new String[]{"othernode"})
+                    new String[]{"othernode"}),
+            new SingleRegexp("Reading digest",
+                    "reading digest from (?<othernode>.*)",
+                    new String[]{"othernode"}),
+            new SingleRegexp("Read-repair",
+                    "Read-repair (?<consistency>.*)",
+                    new String[]{"consistency"})
     };
 
     static public AnalysisResult match(String trace) {
