@@ -73,7 +73,7 @@ an easy fix around this behaviour in cqlsh is to reduce
 ### Continuing parent traces
 
 In order to continue a parent trace send the trace injected
-into custom_payload with the _trace_id_key_ of `jaeger-trace`.
+into custom_payload with the _trace_id_key_. Default is `uber-trace-id`, but it can be changed through an environment variable.
 Inject it using HTTP_HEADERS TextMap codec with url encoding value of true.
 
 Refer to your Cassandra driver documentation in order
