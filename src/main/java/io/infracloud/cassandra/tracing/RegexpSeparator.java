@@ -112,6 +112,9 @@ public class RegexpSeparator {
                     new String[]{"othernode"}),
             new SingleRegexp("Sending PAXOS_PROPOSE message",
                     "Sending PAXOS_PROPOSE message to (?<othernode>.*)",
+                    new String[]{"othernode"}),
+            new SingleRegexp("PAXOS_PROPOSE message received",
+                    "PAXOS_PROPOSE message received from (?<othernode>.*)",
                     new String[]{"othernode"})
     };
 
