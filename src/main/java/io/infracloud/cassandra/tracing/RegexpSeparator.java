@@ -97,7 +97,22 @@ public class RegexpSeparator {
                     new String[]{"othernode"}),
             new SingleRegexp("Read-repair",
                     "Read-repair (?<consistency>.*)",
-                    new String[]{"consistency"})
+                    new String[]{"consistency"}),
+            new SingleRegexp("Preparing",
+                    "Preparing (?<paxosid>.*)",
+                    new String[]{"paxosid"}),
+            new SingleRegexp("Promising ballot",
+                    "Promising ballot (?<paxosid>.*)",
+                    new String[]{"paxosid"}),
+            new SingleRegexp("Sending PAXOS_PREPARE message",
+                    "Sending PAXOS_PREPARE message to (?<othernode>.*)",
+                    new String[]{"othernode"}),
+            new SingleRegexp("PAXOS_PREPARE message received",
+                    "PAXOS_PREPARE message received from (?<othernode>.*)",
+                    new String[]{"othernode"}),
+            new SingleRegexp("Sending PAXOS_PROPOSE message",
+                    "Sending PAXOS_PROPOSE message to (?<othernode>.*)",
+                    new String[]{"othernode"})
     };
 
     static public AnalysisResult match(String trace) {
