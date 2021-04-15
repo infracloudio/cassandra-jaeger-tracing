@@ -24,6 +24,7 @@ import io.jaegertracing.internal.JaegerTracer;
 import io.jaegertracing.internal.propagation.TextMapCodec;
 import io.opentracing.SpanContext;
 import io.opentracing.propagation.Format;
+import io.opentracing.tag.Tags;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.net.MessageIn;
 import org.apache.cassandra.tracing.TraceState;
@@ -126,7 +127,7 @@ public final class JaegerTracing extends Tracing {
     public TraceState begin(String request, InetAddress client, Map<String, String> parameters) {
         final JaegerSpan currentSpan = this.currentSpan.get();
         if (null != client) {
-            currentSpan.setTag("client", client.toString());
+            currentSpan.setTag(Tags.SPAN_KIND_CLIENT, client.toString());
         }
         currentSpan.setTag("request", request);
         return get();
@@ -149,7 +150,8 @@ public final class JaegerTracing extends Tracing {
             spanBuilder = spanBuilder.asChildOf(parentSpan);
         }
         if (isCoordinator) {
-            spanBuilder.withTag("span.kind", "server").withTag("db.type", "cassandra");
+            spanBuilder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
+                    .withTag(Tags.DB_TYPE.getKey(), "cassandra");
         }
         this.spanBuilder.set(spanBuilder);
     }
