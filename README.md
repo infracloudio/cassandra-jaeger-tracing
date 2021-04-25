@@ -2,6 +2,8 @@
 
 ![stability-wip](https://img.shields.io/badge/stability-work_in_progress-lightgrey.svg)
 
+**Update:** Works and tested with Cassandra 3.11.6!
+
 This plugin is based on [A Zipkin tracing plugin for
 Cassandra](https://github.com/thelastpickle/cassandra-zipkin-tracing)
 which is licensed under [Apache License
@@ -67,3 +69,16 @@ This is because cqlsh is polling for tracing information in
 `system_traces` which isn't any longer being created. For the meantime
 an easy fix around this behaviour in cqlsh is to reduce
 `Session.max_trace_wait` down to 1 second.
+
+### Continuing parent traces
+
+In order to continue a parent trace send the trace injected
+into custom_payload with the _trace_id_key_. Default is `uber-trace-id`, but it can be changed through an environment variable.
+Inject it using HTTP_HEADERS TextMap codec with url encoding value of true.
+
+Refer to your Cassandra driver documentation in order
+to figure out how to send custom_payload.
+
+If you need a custom trace key, specify it in environment
+variable `JAEGER_TRACE_KEY`. Note that the default 
+is `uber-trace-id`.
