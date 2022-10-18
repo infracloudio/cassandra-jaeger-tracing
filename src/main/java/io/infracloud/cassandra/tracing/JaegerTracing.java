@@ -76,14 +76,18 @@ public final class JaegerTracing extends Tracing {
     private static final JaegerTracer tracer;
 
     static {
-        tracer = Configuration
-                string hostName = '<undefined>';
+
+                String hostName = "<undefined>";
                 try{
                     hostName = FBUtilities.getBroadcastAddress().getHostName();
-                } catch (java.lang.NoSuchMethodError) {
-                    hostName = InetAddress.getLocalHost().getHostName();
+                } catch (java.lang.NoSuchMethodError e) {
+                    try {
+                        hostName = InetAddress.getLocalHost().getHostName();
+                    } catch (java.net.UnknownHostException f) {
+                        hostName = "<situation is hopeless>";
+                    }
                 }
-            .fromEnv("c*:" + DatabaseDescriptor.getClusterName() + ":" + hostName);
+            tracer = Configuration.fromEnv("c*:" + DatabaseDescriptor.getClusterName() + ":" + hostName)
             .withCodec(new Configuration.CodecConfiguration().withPropagation(
                     Configuration.Propagation.JAEGER).withCodec(
                     Format.Builtin.HTTP_HEADERS,
@@ -100,10 +104,6 @@ public final class JaegerTracing extends Tracing {
 
     public JaegerTracing() {
     }
-
-
-    @Override
-    public UUID
 
     // defensive override, see CASSANDRA-11706
     @Override
