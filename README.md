@@ -2,7 +2,7 @@
 
 ![stability-wip](https://img.shields.io/badge/stability-work_in_progress-lightgrey.svg)
 
-**Update:** Works and tested with Cassandra 3.11.6!
+**Update:** Works and tested with Cassandra 3.11.6 and 4.0.5!
 
 This plugin is based on [A Zipkin tracing plugin for
 Cassandra](https://github.com/thelastpickle/cassandra-zipkin-tracing)
@@ -82,3 +82,10 @@ to figure out how to send custom_payload.
 If you need a custom trace key, specify it in environment
 variable `JAEGER_TRACE_KEY`. Note that the default 
 is `uber-trace-id`.
+
+# Changelog
+
+## 1.2
+
+* fixed to work with Cassandra 4.0.5
+* fixed behaviour of tracer instantiator when broadcast name is unavailable

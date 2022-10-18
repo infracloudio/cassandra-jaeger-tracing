@@ -1,0 +1,3 @@
+[submodule "cassandra"]
+	path = cassandra
+	url = https://github.com/apache/cassandra.git

@@ -77,7 +77,13 @@ public final class JaegerTracing extends Tracing {
 
     static {
         tracer = Configuration
-            .fromEnv("c*:" + DatabaseDescriptor.getClusterName() + ":" + FBUtilities.getBroadcastAddress().getHostName())
+                string hostName = '<undefined>';
+                try{
+                    hostName = FBUtilities.getBroadcastAddress().getHostName();
+                } catch (java.lang.NoSuchMethodError) {
+                    hostName = InetAddress.getLocalHost().getHostName();
+                }
+            .fromEnv("c*:" + DatabaseDescriptor.getClusterName() + ":" + hostName);
             .withCodec(new Configuration.CodecConfiguration().withPropagation(
                     Configuration.Propagation.JAEGER).withCodec(
                     Format.Builtin.HTTP_HEADERS,
@@ -95,6 +101,9 @@ public final class JaegerTracing extends Tracing {
     public JaegerTracing() {
     }
 
+
+    @Override
+    public UUID
 
     // defensive override, see CASSANDRA-11706
     @Override
