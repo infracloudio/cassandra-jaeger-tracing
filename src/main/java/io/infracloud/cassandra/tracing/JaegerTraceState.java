@@ -35,6 +35,7 @@ final class JaegerTraceState extends TraceState {
     private final JaegerTracer tracer;
     private final JaegerSpan currentSpan;
     private boolean stopped = false;
+    private boolean alive = false;      // Can interact with the tracing ecosystem?
     private volatile long timestamp;
     private SpanContext previousTraceContext = null;
 
@@ -43,12 +44,16 @@ final class JaegerTraceState extends TraceState {
             InetAddress coordinator,
             UUID sessionId,
             Tracing.TraceType traceType,
-            JaegerSpan currentSpan) {
+            JaegerSpan currentSpan,
+            boolean alive) {
         super(coordinator, sessionId, traceType);
         tracer = Tracer;
         this.currentSpan = currentSpan;
+        this.alive = alive;
         closer.start();
-        closer.publish(this);
+        if (alive) {
+            closer.publish(this);
+        }
         timestamp = clock.currentTimeMicros();
     }
 
@@ -60,6 +65,10 @@ final class JaegerTraceState extends TraceState {
     protected void traceImpl(String message) {
         // we do it that way because Cassandra calls trace() when an operation completes
         RegexpSeparator.AnalysisResult analysis = RegexpSeparator.match(message);
+
+        if (!this.alive) {
+            return;
+        }
 
         final JaegerTracer.SpanBuilder builder = tracer.buildSpan(analysis.getTraceName())
                 .withTag("thread", Thread.currentThread().getName())
@@ -84,6 +93,11 @@ final class JaegerTraceState extends TraceState {
 
     @Override
     public void stop() {
+
+        if (!this.alive) {
+            return;
+        }
+
         synchronized (this) {
             if (stopped)
                 return;

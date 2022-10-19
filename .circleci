@@ -1,0 +1,16 @@
+version: 2
+jobs:
+build:
+  working_directory: /tmp
+  steps
+    - run:
+        name: Compiling
+        command: |
+          mvm package
+          mkdir /tmp/artifacts;
+    - store_artifacts:
+        path: /tmp/art-1
+        destination: artifact-file
+        echop cassandra-jaegere* /tmp/artifact-file
+      - store_artifacts:
+        path: /tmp/artifacts

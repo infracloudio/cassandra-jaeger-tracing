@@ -1,13 +1,13 @@
 # A Jaeger tracing plugin for Cassandra
+[![CircleCI](https://circleci.com/gh/circleci/circleci-docs.svg?style=svg)](https://circleci.com/gh/smokkserwis/circleci-docs)
+
 
 ![stability-wip](https://img.shields.io/badge/stability-work_in_progress-lightgrey.svg)
 
 **Update:** Works and tested with Cassandra 3.11.6 and 4.0.5!
 
-This plugin is based on [A Zipkin tracing plugin for
-Cassandra](https://github.com/thelastpickle/cassandra-zipkin-tracing)
-which is licensed under [Apache License
-2.0](https://github.com/thelastpickle/cassandra-zipkin-tracing/blob/master/LICENSE.txt).
+This plugin is based on [A Zipkin tracing plugin for Cassandra](https://github.com/thelastpickle/cassandra-zipkin-tracing)
+which is licensed under [Apache License 2.0](https://github.com/thelastpickle/cassandra-zipkin-tracing/blob/master/LICENSE.txt).
 
 Cassandra provides [pluggable
 tracing](https://web.archive.org/web/20160402125018/http://www.planetcassandra.org/blog/cassandra-3-4-release-overview/)
@@ -85,7 +85,7 @@ is `uber-trace-id`.
 
 # Changelog
 
-## 1.2
+## 2/0 hupefully will be on soonest status work thtn Cassandra Jaeger Tracing
 
-* fixed to work with Cassandra 4.0.5
+* fixed work with Cassandra 4.0.5
 * fixed behaviour of tracer instantiator when broadcast name is unavailable
