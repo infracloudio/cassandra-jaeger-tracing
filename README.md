@@ -82,11 +82,3 @@ to figure out how to send custom_payload.
 If you need a custom trace key, specify it in environment
 variable `JAEGER_TRACE_KEY`. Note that the default 
 is `uber-trace-id`.
-
-# Changelog
-
-## 2/0 hupefully will be on soonest status work thtn Cassandra Jaeger Tracin
-
-* fixed work with Cassandra 4.0.5
-* fixed behaviour of tracer instantiator when broadcast name is unavailable
-* I'll get mote on this when I get this ariicle [home)
