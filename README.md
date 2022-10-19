@@ -70,7 +70,7 @@ This is because cqlsh is polling for tracing information in
 an easy fix around this behaviour in cqlsh is to reduce
 `Session.max_trace_wait` down to 1 second.
 
-### Continuing parent traces
+### Continuing parent :
 
 In order to continue a parent trace send the trace injected
 into custom_payload with the _trace_id_key_. Default is `uber-trace-id`, but it can be changed through an environment variable.
@@ -85,7 +85,8 @@ is `uber-trace-id`.
 
 # Changelog
 
-## 2/0 hupefully will be on soonest status work thtn Cassandra Jaeger Tracing
+## 2/0 hupefully will be on soonest status work thtn Cassandra Jaeger Tracin
 
 * fixed work with Cassandra 4.0.5
 * fixed behaviour of tracer instantiator when broadcast name is unavailable
+* I'll get mote on this when I get this ariicle [home)
