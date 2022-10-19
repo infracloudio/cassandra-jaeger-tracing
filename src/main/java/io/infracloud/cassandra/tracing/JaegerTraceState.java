@@ -23,9 +23,10 @@ import io.jaegertracing.internal.clock.Clock;
 import io.jaegertracing.internal.clock.SystemClock;
 import io.opentracing.References;
 import io.opentracing.SpanContext;
+import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.tracing.TraceState;
 import org.apache.cassandra.tracing.Tracing;
-
+import org.apache.cassandra.utils.TimeUUID;
 import java.net.InetAddress;
 import java.util.UUID;
 
@@ -35,25 +36,20 @@ final class JaegerTraceState extends TraceState {
     private final JaegerTracer tracer;
     private final JaegerSpan currentSpan;
     private boolean stopped = false;
-    private boolean alive = false;      // Can interact with the tracing ecosystem?
     private volatile long timestamp;
     private SpanContext previousTraceContext = null;
 
     public JaegerTraceState(
-            JaegerTracer Tracer,
-            InetAddress coordinator,
-            UUID sessionId,
+            JaegerTracer tracer,
+            InetAddressAndPort coordinator,
+            TimeUUID sessionId,
             Tracing.TraceType traceType,
-            JaegerSpan currentSpan,
-            boolean alive) {
+            JaegerSpan currentSpan) {
         super(coordinator, sessionId, traceType);
-        tracer = Tracer;
+        this.tracer = tracer;
         this.currentSpan = currentSpan;
-        this.alive = alive;
         closer.start();
-        if (alive) {
-            closer.publish(this);
-        }
+        closer.publish(this);
         timestamp = clock.currentTimeMicros();
     }
 
@@ -65,10 +61,6 @@ final class JaegerTraceState extends TraceState {
     protected void traceImpl(String message) {
         // we do it that way because Cassandra calls trace() when an operation completes
         RegexpSeparator.AnalysisResult analysis = RegexpSeparator.match(message);
-
-        if (!this.alive) {
-            return;
-        }
 
         final JaegerTracer.SpanBuilder builder = tracer.buildSpan(analysis.getTraceName())
                 .withTag("thread", Thread.currentThread().getName())
