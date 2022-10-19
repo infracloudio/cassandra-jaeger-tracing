@@ -40,7 +40,7 @@ import java.util.UUID;
 import org.apache.cassandra.utils.TimeUUID;
 import static org.apache.cassandra.utils.TimeUUID.Generator.nextTimeUUID;
 
-
+K
 public final class JaegerTracing extends Tracing {
 
     public static final String DEFAULT_TRACE_KEY = "uber-trace-id"
