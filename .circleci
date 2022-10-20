@@ -6,7 +6,8 @@ build:
     - run:
         name: Compiling
         command: |
-          mvm package
+          git init cassandra
+          mvn package
           mkdir /tmp/artifacts;
     - store_artifacts:
         path: /tmp/art-1

@@ -6,7 +6,7 @@
 
     <groupId>io.infracloud.cassandra</groupId>
     <artifactId>cassandra-jaeger-tracing</artifactId>
-    <version>1.2-SNAPSHOT</version>
+    <version>4.0.5-ALPHA-1</version>
     <packaging>jar</packaging>
 
     <name>cassandra-jaeger-tracing</name>
@@ -17,7 +17,6 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
@@ -86,11 +85,7 @@
     </dependencies>
 
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/java</directory>
-            </resource>
-        </resources>
+        <sourceDirectory>src/main/java</sourceDirectory>
         <!-- <pluginManagement><!-\- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -\-> -->
         <plugins>
             <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
@@ -103,9 +98,14 @@
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>3.0.2</version>
             </plugin>
+
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.0</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
