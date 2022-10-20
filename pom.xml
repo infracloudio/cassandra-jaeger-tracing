@@ -6,7 +6,7 @@
 
     <groupId>io.infracloud.cassandra</groupId>
     <artifactId>cassandra-jaeger-tracing</artifactId>
-    <version>1.2-SNAPSHOT</version>
+    <version>4.0.5</version>
     <packaging>jar</packaging>
 
     <name>cassandra-jaeger-tracing</name>
@@ -18,22 +18,37 @@
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-            <version>3.0.1</version>
-        </dependency>
+  <dependencies>
         <dependency>
             <groupId>io.jaegertracing</groupId>
             <artifactId>jaeger-client</artifactId>
-            <version>0.34.0</version>
+            <version>1.8.1</version>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>2.5.0</version>
+            <groupId>io.jaegertracing</groupId>
+            <artifactId>jaeger-core</artifactId>
+            <version>1.8.1</version>
         </dependency>
+    <dependency>
+      <groupId>org.apache.cassandra</groupId>
+      <artifactId>cassandra-all</artifactId>
+      <version>4.0.5</version>
+      <scope>provided</scope>
+      <!-- exclude libthrift as jaeger-thrift needs version 0.12.0 and cassandra uses 0.9.2  -->
+      <exclusions>
+	<exclusion>
+	  <groupId>org.apache.thrift</groupId>
+	  <artifactId>libthrift</artifactId>
+	</exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.1</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -89,9 +104,6 @@
         <resources>
             <resource>
                 <directory>src/main/java</directory>
-            </resource>
-            <resource>
-                <directory>cassandra/src/java</directory>
             </resource>
         </resources>
         <!-- <pluginManagement><!-\- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -\-> -->
