@@ -85,11 +85,6 @@ final class JaegerTraceState extends TraceState {
 
     @Override
     public void stop() {
-
-        if (!this.alive) {
-            return;
-        }
-
         synchronized (this) {
             if (stopped)
                 return;

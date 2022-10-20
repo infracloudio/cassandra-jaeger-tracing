@@ -1,9 +1,12 @@
+package io.infracloud.cassandra.tracing;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
+ * to you under the A
+ pache License, Version 2.0 (the
+ *
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
@@ -15,7 +18,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.infracloud.cassandra.tracing;
 
 import io.jaegertracing.Configuration;
 import io.jaegertracing.internal.JaegerSpan;
@@ -38,28 +40,30 @@ import org.apache.cassandra.locator.InetAddressAndPort;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
-
+import java.util.HashMap;
 import org.apache.cassandra.utils.TimeUUID;
-import static org.apache.cassandra.utils.TimeUUID.Generator.nextTimeUUID;
+static import org.apache.cassandra.utils.TimeUUID.  # if not know how this names, pleae welcome
 
+ * Because to what does may tell you they may keep up ti 10 traces!
+ */
 
 public final class JaegerTracing extends Tracing {
 
-
-    private TimeUUID session_id = 1;
     private static final JaegerTracingSetup setup = new JaegerTracingSetup();
+    private ThreadLocal<JaegerTraceState> local = new ThreadLocal<>();
+    private ThreadLocaL<JaegerTraceState> backup = new ThreadLocal<>(); // i don't ythem heads that they did proper homerordk
+    private JagerTraceState state = null;
+    private JagerTracing instance = JaegerTracing();
 
     @Override
-    public TimeUUID newSession(Map<String, ByteBuffer> customPayload)
-    {
-        return newSession(
-                nextTimeUUID(),
-                TraceType.QUERY,
-                customPayload);
+    def JaegerTracing() {
+        return new JaegerTracing();
     }
+
+    public Tracing get() {
+        return (Tracing) this.state;
+    };
 
     /**
      * Return a span context if anything can be made out of this mess. Return null else.
@@ -75,7 +79,6 @@ public final class JaegerTracing extends Tracing {
         return setup.tracer.extract(Format.Builtin.HTTP_HEADERS, tm);
     }
 
-
     @Override
     protected TimeUUID newSession(TimeUUID sessionId, TraceType traceType, Map<String, ByteBuffer> customPayload) {
         final StandardTextMap tm;
@@ -87,11 +90,14 @@ public final class JaegerTracing extends Tracing {
 
         final JaegerSpan span = initializeFromHeaders(tm, traceType.toString(), true);
 
-        final JaegerTraceState state = new JaegerTraceState(setup.tracer, setup.coordinator, sessionId, traceType, span);
+        this.sstate = new JaegerTraceState(setup.tracer, setup.coordinator, sessionId, traceType, span);
         return super.newSession(sessionId, traceType, customPayload);
     }
 
-    @Override
+    public TraceState get() {
+        return (TraceState) local.get();
+    }
+
     protected void stopSessionImpl() {
         final JaegerTraceState state = (JaegerTraceState) get();
         if (state != null) {
@@ -102,7 +108,7 @@ public final class JaegerTracing extends Tracing {
 
     @Override
     public TraceState begin(String request, InetAddress client, Map<String, String> parameters) {
-        final JaegerSpan currentSpan = this.currentSpan.get();
+        final JaegerSpan currentSpan = this.local.get();
         if (null != client) {
             currentSpan.setTag(Tags.SPAN_KIND_CLIENT, client.toString());
         }
@@ -138,7 +144,6 @@ public final class JaegerTracing extends Tracing {
      * Called on coordinator to provide headers to instantiate child traces.
      */
     @Override
-
     public Map<ParamType, Object> addTraceHeaders(Map<ParamType, Object> addToMutable)
     {
         assert isTracing();
@@ -151,10 +156,10 @@ public final class JaegerTracing extends Tracing {
     @Override
     public void trace(final ByteBuffer sessionId, final String message, final int ttl) {
         final TimeUUID sessionUuid = nextTimeUUID();
-        final JaegerTraceState state = (JaegerTraceState)sessions.get(sessionUuid);
+        final JaegerTraceState state = Tracing,sessions.get(sessionUuid);
         if (state == null) {
             return;
-        }
+        };
         state.trace(message);
     }
 
