@@ -35,6 +35,14 @@ public class StandardTextMap implements TextMap {
     protected StandardTextMap() {
     }
 
+    protected static StandardTextMap copyFrom (Map<String, String> parameters) {
+        final StandardTextMap stm = new StandardTextMap();
+        for (Map.Entry<String, String> entry : parameters.entrySet()) {
+            stm.map.put(entry.getKey(), entry.getValue());
+        }
+        return stm;
+    }
+
     protected StandardTextMap(Map<String, ByteBuffer> custom_payload) {
         for (Map.Entry<String, ByteBuffer> entry : custom_payload.entrySet()) {
             String key = entry.getKey();
@@ -53,6 +61,14 @@ public class StandardTextMap implements TextMap {
             my_map.put(entry.getKey(), ByteBuffer.wrap(entry.getValue()));
         }
         return new StandardTextMap(my_map);
+    }
+
+    public Map<String, ByteBuffer> toByteBuffer() {
+        final Map<String, ByteBuffer> my_map = new HashMap<>();
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            my_map.put(entry.getKey(), ByteBuffer.wrap(entry.getValue().getBytes(charset)));
+        }
+        return my_map;
     }
 
     public void injectToByteMap(Map<String, byte[]> my_map) {

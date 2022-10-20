@@ -26,15 +26,14 @@ import io.opentracing.SpanContext;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.tracing.TraceState;
 import org.apache.cassandra.tracing.Tracing;
-import org.apache.cassandra.utils.TimeUUID;
-import java.net.InetAddress;
 import java.util.UUID;
+
 
 final class JaegerTraceState extends TraceState {
     private static final CloserThread closer = new CloserThread();
     private static final Clock clock = new SystemClock();
     private final JaegerTracer tracer;
-    private final JaegerSpan currentSpan;
+    protected final JaegerSpan currentSpan;
     private boolean stopped = false;
     private volatile long timestamp;
     private SpanContext previousTraceContext = null;
@@ -42,7 +41,7 @@ final class JaegerTraceState extends TraceState {
     public JaegerTraceState(
             JaegerTracer tracer,
             InetAddressAndPort coordinator,
-            TimeUUID sessionId,
+            UUID sessionId,
             Tracing.TraceType traceType,
             JaegerSpan currentSpan) {
         super(coordinator, sessionId, traceType);
@@ -60,7 +59,7 @@ final class JaegerTraceState extends TraceState {
     @Override
     protected void traceImpl(String message) {
         // we do it that way because Cassandra calls trace() when an operation completes
-        RegexpSeparator.AnalysisResult analysis = RegexpSeparator.match(message);
+        final RegexpSeparator.AnalysisResult analysis = RegexpSeparator.match(message);
 
         final JaegerTracer.SpanBuilder builder = tracer.buildSpan(analysis.getTraceName())
                 .withTag("thread", Thread.currentThread().getName())

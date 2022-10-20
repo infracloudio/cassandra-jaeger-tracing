@@ -6,16 +6,40 @@
 
     <groupId>io.infracloud.cassandra</groupId>
     <artifactId>cassandra-jaeger-tracing</artifactId>
-    <version>4.0.5-ALPHA-1</version>
+    <version>4.0.5</version>
     <packaging>jar</packaging>
+    <developers>
+    <developer>
+        <id>bhavin192</id>
+        <name>Bhavin Gandhi</name>
+        <roles>
+            <role>Project maintainer</role>
+        </roles>
+        <properties>
+            <github>bhavin192</github>
+        </properties>
+    </developer>
+    <developer>
+        <id>piotrmaslanka</id>
+        <name>Piotr Maślanka</name>
+        <email>pmaslanka@smok.co</email>
+        <roles>
+            <role>Minor cleanups + port for Cassandra 4.0</role>
+        </roles>
+        <properties>
+            <github>piotrmaslanka</github>
+        </properties>
+        <timezone>+1</timezone>
+    </developer>
 
+    </developers>
     <name>cassandra-jaeger-tracing</name>
     <url>https://github.com/infracloudio/cassandra-jaeger-tracing</url>
-
+    <description>cassandra-jaeger-tracing is a plugin to integrate Cassandra with Jaeger tracing</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+            <java.version>1.11</java.version>
+            <maven.compiler.version>3.8.1</maven.compiler.version>
     </properties>
     <dependencies>
         <dependency>
@@ -64,6 +88,8 @@
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
             <version>4.0.5</version>
+            <scope>compile</scope>
+            <optional>true</optional>
             <!-- exclude libthrift as jaeger-thrift needs version 0.12.0 and cassandra uses 0.9.2  -->
             <exclusions>
                 <exclusion>
@@ -100,12 +126,26 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.0</version>
+                <version>3.10.1</version>
                 <configuration>
+                    <annotationProcessorPaths>
+                    </annotationProcessorPaths>
                     <source>1.8</source>
                     <target>1.8</target>
-                  <buildDirectory>cassandra/java/src</buildDirectory>
             </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <source>1.8</source>
+                            <target>1.8</target>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -113,7 +153,15 @@
             </plugin>
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.0.2</version>
+                <version>3.0.2</version>  <configuration>
+                <archive>
+                    <manifest>
+                        <addClasspath>true</addClasspath>
+                        <classpathPrefix>/</classpathPrefix>
+                        <classpathLayoutType>repository</classpathLayoutType>
+                    </manifest>
+                </archive>
+            </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-install-plugin</artifactId>
@@ -137,7 +185,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.1.1</version>
                 <configuration>
-                    <!-- get all project dependencies -->
+
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>

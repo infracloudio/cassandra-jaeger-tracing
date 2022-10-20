@@ -27,6 +27,7 @@ import io.jaegertracing.internal.propagation.TextMapCodec;
 import org.apache.cassandra.net.Message;
 import io.opentracing.SpanContext;
 import io.opentracing.propagation.Format;
+import io.opentracing.References;
 import io.opentracing.propagation.Format.Builtin;
 import io.opentracing.propagation.TextMapExtractAdapter;
 import io.opentracing.tag.Tags;
@@ -41,63 +42,17 @@ import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Map;
-import java.util.HashMap;
-import org.apache.cassandra.utils.TimeUUID;
-static import org.apache.cassandra.utils.TimeUUID.  # if not know how this names, pleae welcome
+import java.util.UUID;
 
- * Because to what does may tell you they may keep up ti 10 traces!
- */
 
 public final class JaegerTracing extends Tracing {
 
     private static final JaegerTracingSetup setup = new JaegerTracingSetup();
-    private ThreadLocal<JaegerTraceState> local = new ThreadLocal<>();
-    private ThreadLocaL<JaegerTraceState> backup = new ThreadLocal<>(); // i don't ythem heads that they did proper homerordk
-    private JagerTraceState state = null;
-    private JagerTracing instance = JaegerTracing();
 
-    @Override
-    def JaegerTracing() {
-        return new JaegerTracing();
-    }
-
-    public Tracing get() {
-        return (Tracing) this.state;
-    };
-
-    /**
-     * Return a span context if anything can be made out of this mess. Return null else.
-     * @param customPayload payload to process
-     * @return span context or null;
-     */
-    private JaegerSpanContext extractJaegerSpanFromThisMess(Map<String, ByteBuffer> customPayload) {
-        final StandardTextMap tm = new StandardTextMap(customPayload);
-        return setup.tracer.extract(Format.Builtin.HTTP_HEADERS, tm);
-    }
-
-    private JaegerSpanContext extractJaegerSpanFromThisMess(StandardTextMap tm) {
-        return setup.tracer.extract(Format.Builtin.HTTP_HEADERS, tm);
+    public JaegerTracing() {
     }
 
     @Override
-    protected TimeUUID newSession(TimeUUID sessionId, TraceType traceType, Map<String, ByteBuffer> customPayload) {
-        final StandardTextMap tm;
-        if (customPayload != null) {
-            tm = new StandardTextMap(customPayload);
-        } else {
-            tm = new StandardTextMap();
-        }
-
-        final JaegerSpan span = initializeFromHeaders(tm, traceType.toString(), true);
-
-        this.sstate = new JaegerTraceState(setup.tracer, setup.coordinator, sessionId, traceType, span);
-        return super.newSession(sessionId, traceType, customPayload);
-    }
-
-    public TraceState get() {
-        return (TraceState) local.get();
-    }
-
     protected void stopSessionImpl() {
         final JaegerTraceState state = (JaegerTraceState) get();
         if (state != null) {
@@ -108,14 +63,19 @@ public final class JaegerTracing extends Tracing {
 
     @Override
     public TraceState begin(String request, InetAddress client, Map<String, String> parameters) {
-        final JaegerSpan currentSpan = this.local.get();
-        if (null != client) {
-            currentSpan.setTag(Tags.SPAN_KIND_CLIENT, client.toString());
+        JaegerTraceState state = (JaegerTraceState) get();
+        if (state == null) {
+            final StandardTextMap tm = StandardTextMap.copyFrom(parameters);
+            final UUID traceStateUUID = newSession(UUID.randomUUID(), TraceType.REPAIR, tm.toByteBuffer());
+            state = (JaegerTraceState)sessions.get(traceStateUUID);
+            state.currentSpan.setTag("request", request);
         }
-        currentSpan.setTag("request", request);
-        return (TraceState)get();
+        if (client != null) {
+            state.currentSpan.setTag(Tags.SPAN_KIND_CLIENT, client.toString());
+        }
+        set(state);
+        return (TraceState)state;
     }
-
 
     /**
      * Common to both newSession and initializeFromMessage
@@ -130,7 +90,7 @@ public final class JaegerTracing extends Tracing {
 
         JaegerSpanContext parentSpan = setup.tracer.extract(Format.Builtin.HTTP_HEADERS, tm);
 
-        if (parentSpan != null) {
+       if (parentSpan != null) {
             spanBuilder = spanBuilder.asChildOf(parentSpan);
         }
         if (isCoordinator) {
@@ -140,43 +100,77 @@ public final class JaegerTracing extends Tracing {
         return spanBuilder.start();
     }
 
-    /**
-     * Called on coordinator to provide headers to instantiate child traces.
-     */
     @Override
-    public Map<ParamType, Object> addTraceHeaders(Map<ParamType, Object> addToMutable)
-    {
-        assert isTracing();
+    newTraceState(org.apache.cassandra.locator.InetAddressAndPort, java.util.UUID, org.apache.cassandra.tracing.Tracing$TraceType)
 
-        addToMutable.put(ParamType.TRACE_SESSION, Tracing.instance.getSessionId());
-        addToMutable.put(ParamType.TRACE_TYPE, Tracing.instance.getTraceType());
-        return addToMutable;
+    @Override
+    protected UUID newSession(UUID sessionId, TraceType traceType, Map<String,ByteBuffer> customPayload)
+    {
+        // this assert is basically bollocks
+
+        final StandardTextMap map = new StandardTextMap(customPayload);
+        final JaegerSpanContext parentSpan = setup.tracer.extract(Format.Builtin.HTTP_HEADERS, map);
+
+        final TraceState ts;
+        if (parentSpan != null) {
+            ts = newTraceState(this.setup.coordinator, sessionId, traceType, parentSpan);
+        } else {
+            ts = newTraceState(this.setup.coordinator, sessionId, traceType);
+        }
+        set(ts);
+        sessions.put(sessionId, ts);
+
+        return sessionId;
+    }
+
+
+    private final UUID convert(final ByteBuffer o) {
+        return new UUID(o.getLong(), o.getLong());
     }
 
     @Override
     public void trace(final ByteBuffer sessionId, final String message, final int ttl) {
-        final TimeUUID sessionUuid = nextTimeUUID();
-        final JaegerTraceState state = Tracing,sessions.get(sessionUuid);
+        final UUID sessionUuid = convert(sessionId);
+        final TraceState state = sessions.get(sessionUuid);
         if (state == null) {
             return;
         };
         state.trace(message);
     }
 
+
+    protected TraceState newTraceState(InetAddressAndPort coordinator, UUID sessionId, TraceType traceType,
+                                       JaegerSpanContext span) {
+        JaegerSpan currentSpan = setup.tracer.buildSpan(traceType.toString()).addReference(References.CHILD_OF, span).start();
+        currentSpan.setTag("thread", Thread.currentThread().getName());
+        currentSpan.setTag("sessionId", sessionId.toString());
+        currentSpan.setTag("coordinator", coordinator.toString());
+        currentSpan.setTag("started_at", Instant.now().toString());
+
+        final TraceState ts = new JaegerTraceState(
+                setup.tracer,
+                coordinator,
+                sessionId,
+                traceType,
+                currentSpan);
+        return ts;
+    }
+
     @Override
-    protected TraceState newTraceState(InetAddressAndPort coordinator, TimeUUID sessionId, TraceType traceType) {
+    protected TraceState newTraceState(InetAddressAndPort coordinator, UUID sessionId, TraceType traceType) {
         JaegerSpan currentSpan = setup.tracer.buildSpan(traceType.toString()).start();
         currentSpan.setTag("thread", Thread.currentThread().getName());
         currentSpan.setTag("sessionId", sessionId.toString());
         currentSpan.setTag("coordinator", coordinator.toString());
         currentSpan.setTag("started_at", Instant.now().toString());
 
-        return (TraceState) new JaegerTraceState(
+        final TraceState ts = new JaegerTraceState(
                 setup.tracer,
                 coordinator,
                 sessionId,
                 traceType,
                 currentSpan);
+        return ts;
     }
 
 }
