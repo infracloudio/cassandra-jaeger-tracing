@@ -101,9 +101,6 @@ public final class JaegerTracing extends Tracing {
     }
 
     @Override
-    newTraceState(org.apache.cassandra.locator.InetAddressAndPort, java.util.UUID, org.apache.cassandra.tracing.Tracing$TraceType)
-
-    @Override
     protected UUID newSession(UUID sessionId, TraceType traceType, Map<String,ByteBuffer> customPayload)
     {
         // this assert is basically bollocks
@@ -124,7 +121,7 @@ public final class JaegerTracing extends Tracing {
     }
 
 
-    private final UUID convert(final ByteBuffer o) {
+    static private final UUID convert(final ByteBuffer o) {
         return new UUID(o.getLong(), o.getLong());
     }
 

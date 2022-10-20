@@ -30,7 +30,6 @@ import java.util.UUID;
 
 
 final class JaegerTraceState extends TraceState {
-    private static final CloserThread closer = new CloserThread();
     private static final Clock clock = new SystemClock();
     private final JaegerTracer tracer;
     protected final JaegerSpan currentSpan;
@@ -47,14 +46,9 @@ final class JaegerTraceState extends TraceState {
         super(coordinator, sessionId, traceType);
         this.tracer = tracer;
         this.currentSpan = currentSpan;
-        closer.start();
-        closer.publish(this);
         timestamp = clock.currentTimeMicros();
     }
 
-    public long getTimestamp() {
-        return timestamp;
-    }
 
     @Override
     protected void traceImpl(String message) {
