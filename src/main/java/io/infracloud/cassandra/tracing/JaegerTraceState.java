@@ -72,10 +72,6 @@ final class JaegerTraceState extends TraceState {
         timestamp = clock.currentTimeMicros();
     }
 
-    public boolean isStopped() {
-        return stopped;
-    }
-
     @Override
     public void stop() {
         synchronized (this) {
