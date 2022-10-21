@@ -3,7 +3,6 @@ import io.jaegertracing.Configuration;
 import io.jaegertracing.internal.JaegerTracer;
 import io.jaegertracing.internal.propagation.TextMapCodec;
 import io.opentracing.propagation.Format;
-import jdk.internal.math.FDBigInteger;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.config.DatabaseDescriptor;

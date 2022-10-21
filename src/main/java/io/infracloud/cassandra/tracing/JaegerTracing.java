@@ -19,20 +19,12 @@ package io.infracloud.cassandra.tracing;
  * limitations under the License.
  */
 
-import io.jaegertracing.Configuration;
 import io.jaegertracing.internal.JaegerSpan;
 import io.jaegertracing.internal.JaegerSpanContext;
 import io.jaegertracing.internal.JaegerTracer;
-import io.jaegertracing.internal.propagation.TextMapCodec;
-import org.apache.cassandra.net.Message;
-import io.opentracing.SpanContext;
 import io.opentracing.propagation.Format;
 import io.opentracing.References;
-import io.opentracing.propagation.Format.Builtin;
-import io.opentracing.propagation.TextMapExtractAdapter;
 import io.opentracing.tag.Tags;
-import org.apache.cassandra.config.DatabaseDescriptor;
-import org.apache.cassandra.net.ParamType;
 import org.apache.cassandra.tracing.TraceState;
 import org.apache.cassandra.tracing.Tracing;
 import org.apache.cassandra.locator.InetAddressAndPort;
