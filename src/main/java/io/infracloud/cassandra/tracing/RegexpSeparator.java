@@ -115,7 +115,15 @@ public class RegexpSeparator {
                     new String[]{"othernode"}),
             new SingleRegexp("PAXOS_PROPOSE message received",
                     "PAXOS_PROPOSE message received from (?<othernode>.*)",
-                    new String[]{"othernode"})
+                    new String[]{"othernode"}),
+            new SingleRegexp("Sending MUTATION_REQ",
+                    "Sending MUTATION_REQ message to (?<othernode>.*) message size (?<bytes>\\d+) bytes", new String[]{"othernode", "bytes"}),
+            new SingleRegexp("MUTATION_RSP message received",
+                    "MUTATION_RSP message received from (?<othernode>.*)", new String[]{"othernode"}),
+            new SingleRegexp("READ_RSP message received",
+                    "READ_RSP message received from (?<othernode>.*)", new String[]{"othernode"}),
+            new SingleRegexp("Sending READ_REQ message", "Sending READ_REQ message to (?<othernode>.*) message size (?<bytes>\\d+) bytes", new String[]{"othernode", "bytes"})
+
     };
 
     static public AnalysisResult match(String trace) {
