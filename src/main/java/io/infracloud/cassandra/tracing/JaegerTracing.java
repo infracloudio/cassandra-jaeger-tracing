@@ -69,29 +69,6 @@ public final class JaegerTracing extends Tracing {
         return (TraceState)state;
     }
 
-    /**
-     * Common to both newSession and initializeFromMessage
-     *
-     * @param tm            headers or custom payload
-     * @param traceName     name of the trace
-     * @param isCoordinator whether this trace is started on a coordinator
-     */
-    private JaegerSpan initializeFromHeaders(StandardTextMap tm, String traceName, boolean isCoordinator) {
-        JaegerTracer.SpanBuilder spanBuilder = setup.tracer.buildSpan(traceName)
-                .ignoreActiveSpan();
-
-        JaegerSpanContext parentSpan = setup.tracer.extract(Format.Builtin.HTTP_HEADERS, tm);
-
-       if (parentSpan != null) {
-            spanBuilder = spanBuilder.asChildOf(parentSpan);
-        }
-        if (isCoordinator) {
-            spanBuilder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
-                    .withTag(Tags.DB_TYPE.getKey(), "cassandra");
-        }
-        return spanBuilder.start();
-    }
-
     @Override
     protected UUID newSession(UUID sessionId, TraceType traceType, Map<String,ByteBuffer> customPayload)
     {
