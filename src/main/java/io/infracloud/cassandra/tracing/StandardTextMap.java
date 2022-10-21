@@ -44,10 +44,12 @@ public class StandardTextMap implements TextMap {
     }
 
     protected StandardTextMap(Map<String, ByteBuffer> custom_payload) {
-        for (Map.Entry<String, ByteBuffer> entry : custom_payload.entrySet()) {
-            String key = entry.getKey();
-            String value = charset.decode(entry.getValue()).toString();
-            put(key, value);
+        if (custom_payload != null) {
+            for (Map.Entry<String, ByteBuffer> entry : custom_payload.entrySet()) {
+                String key = entry.getKey();
+                String value = charset.decode(entry.getValue()).toString();
+                put(key, value);
+            }
         }
     }
 

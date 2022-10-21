@@ -70,10 +70,11 @@ public final class JaegerTracing extends Tracing {
     }
 
     @Override
+    /**
+     * @param customPayload note that this might be null
+     */
     protected UUID newSession(UUID sessionId, TraceType traceType, Map<String,ByteBuffer> customPayload)
     {
-        // this assert is basically bollocks
-
         final StandardTextMap map = new StandardTextMap(customPayload);
         final JaegerSpanContext parentSpan = setup.tracer.extract(Format.Builtin.HTTP_HEADERS, map);
 
