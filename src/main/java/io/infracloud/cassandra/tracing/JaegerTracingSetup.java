@@ -13,7 +13,11 @@ import io.opentelemetry.api.trace.TracerBuilder;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import io.opentelemetry.sdk.trace.SdkTracerBuilder;
 import io.opentelemetry.sdk.trace.SdkTracer;
+import io.opentelemetry.opentracingshim.CustomTextMapPropagator;
 import io.opentelemetry.exporter.jaeger.JaegerGrpcSpanExporter;
+import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.context.propagation.TextMapPropagator;
+import io.opentelemetry.context.propagation.TextMapSetter;
 
 final public class JaegerTracingSetup {
     public static final String DEFAULT_TRACE_KEY = "uber-trace-id";
@@ -38,7 +42,7 @@ final public class JaegerTracingSetup {
                     .merge(Resource.create(Attributes.of(ResourceAttributes.HOST_IMAGE_VERSION, FBUtilities.getReleaseVersionString)));
         final SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder();
                 .addSpanProcessor(BatchSpanProcessor.builder(JaegerGrpcSpanExporter.builder());
-        tracer =sdkTracerProvider.build;
+        tracer =(Tracer)sdkTracerProvider.build()
 
     }
 
