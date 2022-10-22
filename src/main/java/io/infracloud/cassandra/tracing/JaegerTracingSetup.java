@@ -18,11 +18,13 @@ final public class JaegerTracingSetup {
     public static final JaegerTracer tracer;
 
     public static final InetAddressAndPort coordinator = FBUtilities.getBroadcastAddressAndPort();
-    public static final InetAddress inet_addr = FBUtilities.getJustBroadcastAddress();
 
     static {
 
-        tracer = Configuration.fromEnv("c*:" + DatabaseDescriptor.getClusterName() + ":" + FBUtilities.getJustBroadcastAddress().getHostName())
+        final Configuration.ReporterConfiguration rc = new Configuration.ReporterConfiguration();
+        rc.withMaxQueueSize(5);
+        rc.withFlushInterval(100);
+        tracer = Configuration.fromEnv("c*:" + DatabaseDescriptor.getClusterName() + ":" + FBUtilities.getJustBroadcastAddress().getHostName()).withReporter(rc)
                 .withCodec(new Configuration.CodecConfiguration().withPropagation(
                         Configuration.Propagation.JAEGER).withCodec(
                         Format.Builtin.HTTP_HEADERS,
