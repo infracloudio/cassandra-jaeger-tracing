@@ -25,6 +25,8 @@ import io.jaegertracing.internal.JaegerTracer;
 import io.opentracing.propagation.Format;
 import io.opentracing.References;
 import io.opentracing.tag.Tags;
+
+
 import org.apache.cassandra.tracing.TraceState;
 import org.apache.cassandra.tracing.Tracing;
 import org.apache.cassandra.locator.InetAddressAndPort;

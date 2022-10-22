@@ -70,7 +70,14 @@ This is because cqlsh is polling for tracing information in
 an easy fix around this behaviour in cqlsh is to reduce
 `Session.max_trace_wait` down to 1 second.
 
-### Continuing parent :
+### Since the switch to OpenTelemetry a lot has been changed
+
+You will need to submit your gRPC traces directly to a Jaeger Agent.
+Configure it using the env `OTEL_EXPORTER_JAEGER_ENDPOINT=http://127.0.0.2:14250`.
+Next you will need to select the Jaeger exporter. You do that by `OTEL_TRACES_EXPORTER=jaeger`.
+
+In general refer to relevant [docs](https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md#jaeger-exporter).
+
 
 In order to continue a parent trace send the trace injected
 into custom_payload with the _trace_id_key_. Default is `uber-trace-id`, but it can be changed through an environment variable.

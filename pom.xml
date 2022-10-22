@@ -42,16 +42,16 @@
             <maven.compiler.version>3.8.1</maven.compiler.version>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-jaeger</artifactId>
+            <version>1.19.0</version>
+        </dependency>
 
         <dependency>
-            <groupId>io.jaegertracing</groupId>
-            <artifactId>jaeger-client</artifactId>
-            <version>1.8.1</version>
-        </dependency>
-        <dependency>
-            <groupId>io.jaegertracing</groupId>
-            <artifactId>jaeger-core</artifactId>
-            <version>1.8.1</version>
+            <groupId>io.opentracing</groupId>
+            <artifactId>opentracing-api</artifactId>
+            <version>0.33.0</version>
         </dependency>
     <dependency>
       <groupId>org.apache.cassandra</groupId>
