@@ -16,9 +16,17 @@ classpath and one JVM option, Cassandra's tracing can be replaced with
 Jaeger. It can even identify incoming Jaeger traces and add
 Cassandra's own internal tracing on to it.
 
+### How to use even simpler
+
 ## How to use
 - Make sure you have [Maven](https://maven.apache.org/) and
-  [JDK](https://openjdk.java.net/) installed on your machine
+  [JDK](https://openjdk.java.net/) installed on your machine.
+If you don't like to cloning and building Java, you can always type
+-
+```bash
+mvn dependency:get -Dartifact=io.infracloud.opentracing:cassandra-jaeger-tracing:4.0.5
+```
+
 - Run following commands to build and place the jar
   ```sh
   # Cloning the repository
