@@ -68,7 +68,6 @@ public final class JaegerTracing extends Tracing {
         set(state);
         return (TraceState)state;
     }
-
     @Override
     /**
      * @param customPayload note that this might be null
@@ -76,7 +75,12 @@ public final class JaegerTracing extends Tracing {
     protected UUID newSession(UUID sessionId, TraceType traceType, Map<String,ByteBuffer> customPayload)
     {
         final StandardTextMap map = new StandardTextMap(customPayload);
-        final JaegerSpanContext parentSpan = setup.tracer.extract(Format.Builtin.HTTP_HEADERS, map);
+        JaegerSpanContext parentSpan;
+         parentSpan = setup.tracer.extract(Format.Builtin.HTTP_HEADERS, map);
+         // no need to trace if the parent is not sampled as well, aight?
+        if (!parentSpan.isSampled()) {
+            parentSpan = null;
+             }
 
         final TraceState ts;
         if (parentSpan != null) {
@@ -86,7 +90,6 @@ public final class JaegerTracing extends Tracing {
         }
         set(ts);
         sessions.put(sessionId, ts);
-
         return sessionId;
     }
 

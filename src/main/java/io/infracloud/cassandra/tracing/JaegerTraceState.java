@@ -34,7 +34,7 @@ final class JaegerTraceState extends TraceState {
     private final JaegerTracer tracer;
     protected final JaegerSpan currentSpan;
     private boolean stopped = false;
-    private volatile long timestamp;
+    protected volatile long timestamp;
     private SpanContext previousTraceContext = null;
 
     public JaegerTraceState(
@@ -70,6 +70,10 @@ final class JaegerTraceState extends TraceState {
         previousTraceContext = span.context();
         span.finish();
         timestamp = clock.currentTimeMicros();
+    }
+
+    public boolean isStopped() {
+        return this.stopped;
     }
 
     @Override
