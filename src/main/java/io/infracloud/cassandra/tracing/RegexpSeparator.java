@@ -123,7 +123,6 @@ public class RegexpSeparator {
             new SingleRegexp("READ_RSP message received",
                     "READ_RSP message received from (?<othernode>.*)", new String[]{"othernode"}),
             new SingleRegexp("Sending READ_REQ message", "Sending READ_REQ message to (?<othernode>.*) message size (?<bytes>\\d+) bytes", new String[]{"othernode", "bytes"})
-
     };
 
     static public AnalysisResult match(String trace) {

@@ -35,14 +35,6 @@ public class StandardTextMap implements TextMap {
     protected StandardTextMap() {
     }
 
-    protected static StandardTextMap copyFrom (Map<String, String> parameters) {
-        final StandardTextMap stm = new StandardTextMap();
-        for (Map.Entry<String, String> entry : parameters.entrySet()) {
-            stm.map.put(entry.getKey(), entry.getValue());
-        }
-        return stm;
-    }
-
     protected StandardTextMap(Map<String, ByteBuffer> custom_payload) {
         if (custom_payload != null) {
             for (Map.Entry<String, ByteBuffer> entry : custom_payload.entrySet()) {
@@ -51,6 +43,14 @@ public class StandardTextMap implements TextMap {
                 put(key, value);
             }
         }
+    }
+
+    protected static StandardTextMap copyFrom(Map<String, String> parameters) {
+        final StandardTextMap stm = new StandardTextMap();
+        for (Map.Entry<String, String> entry : parameters.entrySet()) {
+            stm.map.put(entry.getKey(), entry.getValue());
+        }
+        return stm;
     }
 
     /**
