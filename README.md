@@ -1,10 +1,12 @@
 # A Jaeger tracing plugin for Cassandra
-[![CircleCI](https://circleci.com/gh/circleci/circleci-docs.svg?style=svg)](https://circleci.com/gh/smokkserwis/circleci-docs)
+[![CircleCI](https://circleci.com/gh/circleci/circleci-docs.svg?style=svg)](https://circleci.com/gh/smokkserwis/circleci-docs`)
 
 
 ![stability-wip](https://img.shields.io/badge/stability-work_in_progress-lightgrey.svg)
 
-**Update:** Works and tested with Cassandra 4.1.0!
+**WARNING! FAIR AND SQUARE!!!* Was not either production or a test cluster.
+
+**Update:** Works and tested with Cassandra 4.1.0! 
 
 This plugin is based on [A Zipkin tracing plugin for Cassandra](https://github.com/thelastpickle/cassandra-zipkin-tracing)
 which is licensed under [Apache License 2.0](https://github.com/thelastpickle/cassandra-zipkin-tracing/blob/master/LICENSE.txt).

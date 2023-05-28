@@ -43,7 +43,7 @@ final class JaegerTraceState extends TraceState {
             TimeUUID sessionId,
             Tracing.TraceType traceType,
             JaegerSpan currentSpan) {
-        super(coordinator, sessionId, traceType);
+        super(coordinator, sessionId.toUUID(), traceType);
         this.tracer = tracer;
         this.currentSpan = currentSpan;
         timestamp = clock.currentTimeMicros();
