@@ -2,6 +2,7 @@ package io.infracloud.cassandra.tracing;
 
 import io.jaegertracing.Configuration;
 import io.jaegertracing.internal.JaegerTracer;
+import io.jaegertracing.internal.propagation.BinaryCodec;
 import io.jaegertracing.internal.propagation.TextMapCodec;
 import io.opentracing.propagation.Format;
 import org.apache.cassandra.config.DatabaseDescriptor;
@@ -22,8 +23,10 @@ final public class JaegerTracingSetup {
         rc.withMaxQueueSize(5);
         rc.withFlushInterval(100);
         tracer = Configuration.fromEnv("c*:" + DatabaseDescriptor.getClusterName() + ":" + FBUtilities.getJustBroadcastAddress().getHostName()).withReporter(rc)
-                .withCodec(new Configuration.CodecConfiguration().withPropagation(
-                        Configuration.Propagation.JAEGER).withCodec(
+                .withCodec(new Configuration.CodecConfiguration().withBinaryCodec(Format.Builtin.BINARY, BinaryCodec.builder().build()))
+                .withCodec(new Configuration.CodecConfiguration().withBinaryCodec(Format.Builtin.BINARY_INJECT, BinaryCodec.builder().build()))
+                .withCodec(new Configuration.CodecConfiguration().withBinaryCodec(Format.Builtin.BINARY_EXTRACT, BinaryCodec.builder().build()))
+                .withCodec(new Configuration.CodecConfiguration().withPropagation(Configuration.Propagation.JAEGER).withCodec(
                         Format.Builtin.HTTP_HEADERS,
                         TextMapCodec.builder().withUrlEncoding(false)
                                 .withSpanContextKey(trace_key)

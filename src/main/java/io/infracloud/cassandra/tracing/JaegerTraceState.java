@@ -22,20 +22,25 @@ import io.jaegertracing.internal.JaegerTracer;
 import io.jaegertracing.internal.clock.Clock;
 import io.jaegertracing.internal.clock.SystemClock;
 import io.opentracing.References;
-import io.opentracing.SpanContext;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.tracing.TraceState;
 import org.apache.cassandra.tracing.Tracing;
 import org.apache.cassandra.utils.TimeUUID;
 
+import java.util.Deque;
+import java.util.concurrent.ConcurrentLinkedDeque;
+
 
 final class JaegerTraceState extends TraceState {
     private static final Clock clock = new SystemClock();
-    protected final JaegerSpan currentSpan;
+
+    private static final int WAIT_FOR_PENDING_EVENTS_TIMEOUT_SECS = 60;
+    protected final ThreadLocal<JaegerSpan> currentSpan = new ThreadLocal<>();
+    final Deque<JaegerSpan> openSpans = new ConcurrentLinkedDeque();
     private final JaegerTracer tracer;
+    protected JaegerSpan span;
     protected volatile long timestamp;
     private boolean stopped = false;
-    private SpanContext previousTraceContext = null;
 
     public JaegerTraceState(
             JaegerTracer tracer,
@@ -43,38 +48,71 @@ final class JaegerTraceState extends TraceState {
             TimeUUID sessionId,
             Tracing.TraceType traceType,
             JaegerSpan currentSpan) {
-        super(coordinator, sessionId.toUUID(), traceType);
+        super(coordinator, sessionId, traceType);
         this.tracer = tracer;
-        this.currentSpan = currentSpan;
+        if (currentSpan != null) {
+            this.openSpans.add(currentSpan);
+            this.span = currentSpan;
+        }
         timestamp = clock.currentTimeMicros();
     }
-
 
     @Override
     protected void traceImpl(String message) {
         // we do it that way because Cassandra calls trace() when an operation completes, not when it starts
         // as is expected by Jaeger
+        if (this.span != null) {
+            this.tracer.activateSpan(this.span);
+        }
         final RegexpSeparator.AnalysisResult analysis = RegexpSeparator.match(message);
 
-        final JaegerTracer.SpanBuilder builder = tracer.buildSpan(analysis.getTraceName())
+        final JaegerSpan child_of = this.currentSpan.get();
+        JaegerTracer.SpanBuilder builder = tracer.buildSpan(analysis.getTraceName())
                 .withTag("thread", Thread.currentThread().getName())
                 .withStartTimestamp(timestamp)
-                .addReference(References.CHILD_OF, currentSpan.context())
                 .ignoreActiveSpan();
+        if (child_of != null) {
+            builder = builder.addReference(References.CHILD_OF, child_of.context());
+        }
 
-        if (previousTraceContext != null) {
-            builder.addReference(References.FOLLOWS_FROM, previousTraceContext);
+        if (this.span != null) {
+            builder.addReference(References.FOLLOWS_FROM, this.span.context());
         }
 
         final JaegerSpan span = builder.start();
         analysis.applyTags(span);
-        previousTraceContext = span.context();
-        span.finish();
+        JaegerSpan presentSpan = this.currentSpan.get();
+        if (presentSpan != null) {
+            presentSpan.finish();
+            this.openSpans.remove(presentSpan);
+            this.currentSpan.remove();
+        }
         timestamp = clock.currentTimeMicros();
     }
 
     public boolean isStopped() {
         return this.stopped;
+    }
+
+    private void closeClientSpans() {
+        for (JaegerSpan span : this.openSpans) {
+            this.tracer.activateSpan(span);
+            span.finish();
+        }
+        this.openSpans.clear();
+        this.currentSpan.remove();
+    }
+
+    @Override
+    protected void waitForPendingEvents() {
+        int sleepTime = 100;
+        int maxAttempts = WAIT_FOR_PENDING_EVENTS_TIMEOUT_SECS / sleepTime;
+        for (int i = 0; 0 < openSpans.size() && i < maxAttempts; ++i) {
+            try {
+                Thread.sleep(sleepTime);
+            } catch (InterruptedException ex) {
+            }
+        }
     }
 
     @Override
@@ -85,7 +123,7 @@ final class JaegerTraceState extends TraceState {
             stopped = true;
         }
 
+        closeClientSpans();
         super.stop();
-        currentSpan.finish(timestamp);
     }
 }

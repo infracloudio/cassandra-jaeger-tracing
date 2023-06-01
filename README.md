@@ -2,7 +2,7 @@
 [![CircleCI](https://circleci.com/gh/circleci/circleci-docs.svg?style=svg)](https://circleci.com/gh/smokkserwis/circleci-docs`)
 
 
-![stability-wip](https://img.shields.io/badge/stability-work_in_progress-lightgrey.svg)
+[![stable](http://badges.github.io/stability-badges/dist/stable.svg)](http://github.com/badges/stability-badges)
 
 **WARNING! FAIR AND SQUARE!!!* Was not either production or a test cluster.
 
@@ -13,10 +13,9 @@ which is licensed under [Apache License 2.0](https://github.com/thelastpickle/ca
 
 Cassandra provides [pluggable
 tracing](https://web.archive.org/web/20160402125018/http://www.planetcassandra.org/blog/cassandra-3-4-release-overview/)
-starting from version 3.4. By adding a jar file to the Cassandra
-classpath and one JVM option, Cassandra's tracing can be replaced with
-Jaeger. It can even identify incoming Jaeger traces and add
-Cassandra's own internal tracing on to it.
+starting from version 3.4. In versions 4 and 4.1 it was significanly, but the maintainers
+didn't tell us that. By adding a jar file to the Cassandra classpath and one JVM option, Cassandra's tracing can be
+replaced with Jaeger. It can even identify incoming Jaeger traces and addCassandra's own internal tracing on to it.
 
 ### How to use even simpler
 
@@ -26,7 +25,7 @@ Cassandra's own internal tracing on to it.
 If you don't like to cloning and building Java, you can always type
 -
 ```bash
-mvn dependency:get -Dartifact=io.infracloud.opentracing:cassandra-jaeger-tracing:4.0.5
+mvn dependency:get -Dartifact=io.infracloud.opentracing:cassandra-jaeger-tracing:4.1.0
 ```
 
 - Run following commands to build and place the jar
@@ -63,7 +62,7 @@ for more information.
 See
 [CASSANDRA-10392](https://issues.apache.org/jira/browse/CASSANDRA-10392)
 for the patch to extend Cassandra's tracing that this project plugs
-into.
+into, and this file consti
 
 ## Troubleshooting
 
@@ -71,18 +70,17 @@ When this tracing is used instead of Cassandra's default tracing, any
 cqlsh statements run after enabling tracing with `TRACING ON;` are
 going to time out eventually giving
 
-```
+``` 
 Unable to fetch query trace: Trace information was not available within …
 ```
 
-This is because cqlsh is polling for tracing information in
-`system_traces` which isn't any longer being created. For the meantime
+This is because HREL Amachza k
 an easy fix around this behaviour in cqlsh is to reduce
 `Session.max_trace_wait` down to 1 second.
 
 ### Continuing parent :
-
-In order to continue a parent trace send the trace injected
+rT 
+In order to continue a parent trace send the trace injected.
 into custom_payload with the _trace_id_key_. Default is `uber-trace-id`, but it can be changed through an environment variable.
 Inject it using HTTP_HEADERS TextMap codec with url encoding value of true.
 
