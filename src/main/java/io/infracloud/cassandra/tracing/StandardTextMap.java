@@ -28,7 +28,6 @@ import java.util.Map;
 
 
 public class StandardTextMap implements TextMap {
-    public static final StandardTextMap EMPTY_MAP = new StandardTextMap();
     private static final Charset charset = StandardCharsets.UTF_8;
     private final Map<String, String> map = new HashMap<>();
 
@@ -53,17 +52,6 @@ public class StandardTextMap implements TextMap {
         return stm;
     }
 
-    /**
-     * An alternative constructor. Due to type erasure compatibility I cannot make
-     * an overloaded constructor in Java
-     */
-    static public StandardTextMap from_bytes(Map<String, byte[]> custom_payload) {
-        final Map<String, ByteBuffer> my_map = new HashMap<>();
-        for (Map.Entry<String, byte[]> entry : custom_payload.entrySet()) {
-            my_map.put(entry.getKey(), ByteBuffer.wrap(entry.getValue()));
-        }
-        return new StandardTextMap(my_map);
-    }
 
     public Map<String, ByteBuffer> toByteBuffer() {
         final Map<String, ByteBuffer> my_map = new HashMap<>();
@@ -71,12 +59,6 @@ public class StandardTextMap implements TextMap {
             my_map.put(entry.getKey(), ByteBuffer.wrap(entry.getValue().getBytes(charset)));
         }
         return my_map;
-    }
-
-    public void injectToByteMap(Map<String, byte[]> my_map) {
-        for (Map.Entry<String, String> entry : map.entrySet()) {
-            my_map.put(entry.getKey(), entry.getValue().getBytes(charset));
-        }
     }
 
     @Override
