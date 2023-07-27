@@ -45,7 +45,15 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-
+/**
+ * How does it work?
+ *
+ * There are a number of traces that Cassandra can emit:
+ *
+ * 1. TraceType.REPAIR
+ *      a. Starts with a call to Tracing.newSession(TraceType.REPAIR)
+ *      b.
+ */
 public final class JaegerTracing extends Tracing {
 
     private static final String JAEGER_HEADER = "jaeger-header";
@@ -54,9 +62,12 @@ public final class JaegerTracing extends Tracing {
     private static final Logger logger = LoggerFactory.getLogger(JaegerTracing.class);
 
 
-    public JaegerTracing() {
-    }
+    /* a pusty descriptor is necessary for Cassandra to initialize this class **/
+    public JaegerTracing() {}
 
+    /**
+     * Stop the session processed by the current thread
+     */
     @Override
     protected void stopSessionImpl() {
         final JaegerTraceState state = (JaegerTraceState) get();
@@ -160,8 +171,6 @@ public final class JaegerTracing extends Tracing {
 
     private TraceState newTraceState(InetAddressAndPort coordinator, TimeUUID sessionId, TraceType traceType,
                                      JaegerSpanContext span) {
-        this.logger.trace("newTraceState({}, {})", sessionId, traceType.toString());
-
         Span my_span = JaegerTracingSetup.tracer.activeSpan();
         JaegerTracer.SpanBuilder sb = JaegerTracingSetup.tracer.buildSpan(traceType.toString());
         if (my_span != null) {

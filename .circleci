@@ -11,6 +11,6 @@ build:
     - store_artifacts:
         path: /tmp/art-1
         destination: artifact-file
-        echop cassandra-jaegere* /tmp/artifact-file
+        echo cassandra-jaeger* /tmp/artifact-file
       - store_artifacts:
         path: /tmp/artifacts
