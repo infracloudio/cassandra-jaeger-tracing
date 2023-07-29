@@ -28,7 +28,6 @@ import java.util.Map;
 
 
 public class StandardTextMap implements TextMap {
-    public static final StandardTextMap EMPTY_MAP = new StandardTextMap();
     private static final Charset charset = StandardCharsets.UTF_8;
     private final Map<String, String> map = new HashMap<>();
 
@@ -36,29 +35,30 @@ public class StandardTextMap implements TextMap {
     }
 
     protected StandardTextMap(Map<String, ByteBuffer> custom_payload) {
-        for (Map.Entry<String, ByteBuffer> entry : custom_payload.entrySet()) {
-            String key = entry.getKey();
-            String value = charset.decode(entry.getValue()).toString();
-            put(key, value);
+        if (custom_payload != null) {
+            for (Map.Entry<String, ByteBuffer> entry : custom_payload.entrySet()) {
+                String key = entry.getKey();
+                String value = charset.decode(entry.getValue()).toString();
+                put(key, value);
+            }
         }
     }
 
-    /**
-     * An alternative constructor. Due to type erasure compatibility I cannot make
-     * an overloaded constructor in Java
-     */
-    static public StandardTextMap from_bytes(Map<String, byte[]> custom_payload) {
+    protected static StandardTextMap copyFrom(Map<String, String> parameters) {
+        final StandardTextMap stm = new StandardTextMap();
+        for (Map.Entry<String, String> entry : parameters.entrySet()) {
+            stm.map.put(entry.getKey(), entry.getValue());
+        }
+        return stm;
+    }
+
+
+    public Map<String, ByteBuffer> toByteBuffer() {
         final Map<String, ByteBuffer> my_map = new HashMap<>();
-        for (Map.Entry<String, byte[]> entry : custom_payload.entrySet()) {
-            my_map.put(entry.getKey(), ByteBuffer.wrap(entry.getValue()));
-        }
-        return new StandardTextMap(my_map);
-    }
-
-    public void injectToByteMap(Map<String, byte[]> my_map) {
         for (Map.Entry<String, String> entry : map.entrySet()) {
-            my_map.put(entry.getKey(), entry.getValue().getBytes(charset));
+            my_map.put(entry.getKey(), ByteBuffer.wrap(entry.getValue().getBytes(charset)));
         }
+        return my_map;
     }
 
     @Override
