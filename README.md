@@ -4,9 +4,7 @@
 
 [![stable](http://badges.github.io/stability-badges/dist/stable.svg)](http://github.com/badges/stability-badges)
 
-**WARNING! FAIR AND SQUARE!!!* Was not either production or a test cluster.
-
-**Update:** Works and tested with Cassandra 4.1.0! 
+**Update:** Works and tested with both Cassandra 4.1.0 and 5.0.2! 
 
 This plugin is based on [A Zipkin tracing plugin for Cassandra](https://github.com/thelastpickle/cassandra-zipkin-tracing)
 which is licensed under [Apache License 2.0](https://github.com/thelastpickle/cassandra-zipkin-tracing/blob/master/LICENSE.txt).
