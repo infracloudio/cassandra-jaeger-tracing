@@ -1,8 +1,12 @@
 # A Jaeger tracing plugin for Cassandra
 
-![stability-wip](https://img.shields.io/badge/stability-work_in_progress-lightgrey.svg)
+![stability-wip](https://img.shields.io/badge/stability-archived-lightgrey.svg)
 
-**Update:** Works and tested with Cassandra 3.11.6!
+**Update**: This repository is no longer actively maintained. One of the contributors, [piotrmaslanka](https://github.com/piotrmaslanka), has taken over the project's maintenance.  
+Huge thanks to Piotr for picking this up and keeping the project going!  
+The updated repository can be found at <https://github.com/smok-serwis/cassandra-jaeger-tracing>.
+
+---
 
 This plugin is based on [A Zipkin tracing plugin for
 Cassandra](https://github.com/thelastpickle/cassandra-zipkin-tracing)
